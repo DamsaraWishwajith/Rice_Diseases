@@ -1,0 +1,1083 @@
+import 'dart:math';
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:tflite_flutter/tflite_flutter.dart';
+import 'package:image/image.dart' as img;
+import '../theme/app_colors.dart';
+import '../widgets/card_widget.dart';
+import '../widgets/top_bar.dart';
+import '../widgets/button_widget.dart';
+import '../widgets/tag_widget.dart';
+import '../models/farmer.dart';
+import '../models/disease_rec.dart';
+
+class ScanScreen extends StatefulWidget {
+  final List<Farmer> farmers;
+
+  const ScanScreen({super.key, required this.farmers});
+
+  @override
+  State<ScanScreen> createState() => _ScanScreenState();
+}
+
+class _ScanScreenState extends State<ScanScreen> {
+  String _stage = 'pick'; // pick, scanning, result, recommend, compare, error
+  Farmer? _selectedFarmer;
+  Interpreter? _interpreter;
+  final List<String> _labels = ['Bacterialblight', 'Brownspot', 'Healthy', 'Others', 'Sheath_blight'];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadModel();
+  }
+
+  Future<void> _loadModel() async {
+    try {
+      _interpreter = await Interpreter.fromAsset('assets/models/model.tflite');
+      debugPrint('Model loaded successfully');
+    } catch (e) {
+      debugPrint('Failed to load model: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _interpreter?.close();
+    super.dispose();
+  }
+
+  String? _disease;
+  String? _previewImage;
+  int _scanStep = 0;
+  Map<String, dynamic>? _scanResult;
+  String _notes = '';
+  bool _useDemo = true;
+  double _spread1 = 58;
+  double _spread2 = 34;
+  final ImagePicker _picker = ImagePicker();
+  File? _imageFile;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_stage == 'pick') return _buildPickScreen();
+    if (_stage == 'scanning') return _buildScanningScreen();
+    if (_stage == 'result') return _buildResultScreen();
+    if (_stage == 'recommend') return _buildRecommendScreen();
+    if (_stage == 'compare') return _buildCompareScreen();
+    if (_stage == 'error') return _buildErrorScreen();
+    return const SizedBox();
+  }
+
+  Widget _buildPickScreen() {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            TopBar(title: 'Scan Leaf'),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 100),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_useDemo)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 18),
+                        decoration: BoxDecoration(
+                          color: AppColors.warnPale,
+                          border: Border.all(color: AppColors.warn.withOpacity(0.27)),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          children: [
+                            const Text('🧪', style: TextStyle(fontSize: 18)),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text('Demo Mode Active', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.warn, fontSize: 13)),
+                                  Text('Predictions are simulated', style: TextStyle(fontSize: 12, color: AppColors.sub)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const Text(
+                      'Select a farmer then upload a rice leaf photo for AI analysis.',
+                      style: TextStyle(fontSize: 13, color: AppColors.sub),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Select Farmer',
+                      style: TextStyle(
+                        fontFamily: 'DM Serif Display',
+                        fontSize: 18,
+                        color: AppColors.text,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ...widget.farmers.map((f) => _buildFarmerTile(f)),
+                    if (_selectedFarmer != null) ...[
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Upload Leaf Image',
+                        style: TextStyle(
+                          fontFamily: 'DM Serif Display',
+                          fontSize: 18,
+                          color: AppColors.text,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: () => _showPickerOptions(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 44),
+                          decoration: BoxDecoration(
+                            color: AppColors.greenPale,
+                            border: Border.all(color: AppColors.green, width: 2, style: BorderStyle.solid),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Column(
+                            children: [
+                              const Text('📷', style: TextStyle(fontSize: 52)),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Tap to capture / upload',
+                                style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.green, fontSize: 16),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text('JPG or PNG · Close-up of rice leaf', style: TextStyle(fontSize: 13, color: AppColors.sub)),
+                              const SizedBox(height: 14),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _buildBadge('📸 Camera'),
+                                  const SizedBox(width: 8),
+                                  _buildBadge('🖼 Gallery'),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFarmerTile(Farmer f) {
+    final isSelected = _selectedFarmer?.id == f.id;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedFarmer = f),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.greenPale : AppColors.white,
+          border: Border.all(color: isSelected ? AppColors.green.withOpacity(0.5) : AppColors.border.withOpacity(0.6), width: 1.0),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: AppColors.forest.withOpacity(0.03), blurRadius: 12, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Text('👤', style: TextStyle(fontSize: 18)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(f.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.text)),
+                  Text(f.location ?? f.district, style: const TextStyle(fontSize: 12, color: AppColors.sub)),
+                ],
+              ),
+            ),
+            if (isSelected) const Text('✓', style: TextStyle(fontSize: 18, color: AppColors.green)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(text, style: const TextStyle(fontSize: 12, color: AppColors.sub)),
+    );
+  }
+
+  void _showPickerOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 24),
+            const Text('Scan Leaf', style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 22, color: AppColors.forest)),
+            const SizedBox(height: 8),
+            const Text('Choose image source for analysis', style: TextStyle(color: AppColors.sub, fontSize: 13)),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                _buildPickerCard(context, 'Camera', '📸', ImageSource.camera),
+                const SizedBox(width: 16),
+                _buildPickerCard(context, 'Gallery', '🖼️', ImageSource.gallery),
+              ],
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPickerCard(BuildContext context, String title, String icon, ImageSource source) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _pickImage(source),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          decoration: BoxDecoration(
+            color: AppColors.greenPale,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: AppColors.green.withOpacity(0.1)),
+          ),
+          child: Column(
+            children: [
+              Text(icon, style: const TextStyle(fontSize: 34)),
+              const SizedBox(height: 12),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.forest, fontSize: 15)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _pickImage(ImageSource source) async {
+    Navigator.pop(context);
+    try {
+      final XFile? image = await _picker.pickImage(source: source);
+      if (image != null) {
+        setState(() {
+          _imageFile = File(image.path);
+          _previewImage = image.path;
+          _stage = 'scanning';
+          _scanStep = 0;
+          _simulateScan();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Could not open source. Note: Camera does not work on Simulators.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
+  void _simulateScan() async {
+    if (_imageFile == null) return;
+    
+    // Step 0: uploading
+    await Future.delayed(const Duration(milliseconds: 600));
+    setState(() => _scanStep = 1);
+    
+    if (_interpreter == null) {
+      setState(() => _stage = 'error');
+      return;
+    }
+
+    try {
+      setState(() => _scanStep = 2);
+      
+      final imageBytes = await _imageFile!.readAsBytes();
+      img.Image? originalImage = img.decodeImage(imageBytes);
+      if (originalImage == null) throw Exception("Failed to decode image");
+      
+      img.Image resizedImage = img.copyResize(originalImage, width: 224, height: 224);
+      
+      var input = List.generate(1, (i) => List.generate(224, (j) => List.generate(224, (k) => List.generate(3, (l) => 0.0))));
+      for (int y = 0; y < 224; y++) {
+        for (int x = 0; x < 224; x++) {
+          final pixel = resizedImage.getPixel(x, y);
+          input[0][y][x][0] = pixel.r.toDouble();
+          input[0][y][x][1] = pixel.g.toDouble();
+          input[0][y][x][2] = pixel.b.toDouble();
+        }
+      }
+      
+      var output = List.generate(1, (i) => List.filled(_labels.length, 0.0));
+      
+      _interpreter!.run(input, output);
+      setState(() => _scanStep = 3);
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      List<double> probabilities = output[0];
+      int maxIdx = 0;
+      double maxProb = probabilities[0];
+      for (int i = 1; i < probabilities.length; i++) {
+        if (probabilities[i] > maxProb) {
+          maxProb = probabilities[i];
+          maxIdx = i;
+        }
+      }
+      
+      final probs = <String, int>{};
+      for (int i = 0; i < _labels.length; i++) {
+        probs[_labels[i]] = (probabilities[i] * 100).round();
+      }
+      
+      setState(() {
+        _scanResult = {'disease': _labels[maxIdx], 'confidence': (maxProb * 100).round(), 'probabilities': probs};
+        _disease = _labels[maxIdx];
+        _stage = 'result';
+      });
+    } catch (e) {
+      debugPrint("Inference error: $e");
+      setState(() => _stage = 'error');
+    }
+  }
+
+  Widget _buildScanningScreen() {
+    final steps = ['Uploading image...', 'Preprocessing leaf...', 'Running AI model...', 'Finalizing results...'];
+    final progress = [20, 45, 80, 98];
+
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(40),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    _buildRippleRing(),
+                    _buildRippleRing(delay: 0.7),
+                    Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [AppColors.forest, AppColors.green],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(color: AppColors.forest.withOpacity(0.3), blurRadius: 32, offset: const Offset(0, 8)),
+                        ],
+                      ),
+                      child: const Center(child: Text('🔬', style: TextStyle(fontSize: 38))),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                const Text(
+                  'Analyzing Leaf',
+                  style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 26, color: AppColors.forest),
+                ),
+                const SizedBox(height: 8),
+                Text(steps[_scanStep], style: const TextStyle(fontSize: 14, color: AppColors.sub)),
+                const SizedBox(height: 28),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(steps.length, (i) {
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: i == _scanStep ? 24 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: i < _scanStep ? AppColors.green : i == _scanStep ? AppColors.accent : AppColors.border,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 28),
+                Container(
+                  width: 220,
+                  height: 6,
+                  decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: progress[_scanStep] / 100,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(colors: [AppColors.green, AppColors.accent]),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text('${progress[_scanStep]}% complete', style: const TextStyle(fontSize: 13, color: AppColors.sub)),
+                const SizedBox(height: 40),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.greenPale,
+                    border: Border.all(color: AppColors.border),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: AppColors.greenL,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text('Keras model · Rice disease classifier · 4 classes', style: TextStyle(fontSize: 12, color: AppColors.sub)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRippleRing({double delay = 0}) {
+    return TweenAnimationBuilder(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(seconds: 2),
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: 1 - value,
+          child: Transform.scale(
+            scale: 1 + value,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.greenL.withOpacity(0.27), width: 2),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildResultScreen() {
+    final disease = _disease ?? 'Unknown';
+    final rec = diseaseRecs[disease] ?? diseaseRecs['Healthy']!;
+    final isHealthy = disease == 'Healthy';
+    final resultColor = isHealthy ? AppColors.green : AppColors.danger;
+    final resultBg = isHealthy ? AppColors.greenPale : AppColors.dangerPale;
+    final conf = _scanResult?['confidence'] as int?;
+
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            TopBar(
+              title: 'Scan Result',
+              onBack: () => setState(() {
+                _stage = 'pick';
+                _scanResult = null;
+                _disease = null;
+                _previewImage = null;
+              }),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 100),
+                child: Column(
+                  children: [
+                    if (_imageFile != null)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: Image.file(
+                          _imageFile!,
+                          height: 200,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    else if (_previewImage != null)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: Image.network(
+                          _previewImage!,
+                          height: 200,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    const SizedBox(height: 18),
+                    Container(
+                      padding: const EdgeInsets.all(22),
+                      decoration: BoxDecoration(
+                        color: resultBg,
+                        border: Border.all(color: resultColor.withOpacity(0.27), width: 1.0),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(color: resultColor.withOpacity(0.08), blurRadius: 24, offset: const Offset(0, 8)),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Text(rec.icon, style: const TextStyle(fontSize: 48)),
+                          const SizedBox(height: 10),
+                          Text(
+                            disease,
+                            style: TextStyle(
+                              fontFamily: 'DM Serif Display',
+                              fontSize: 28,
+                              color: resultColor,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isHealthy ? 'No disease found' : 'Disease Detected',
+                            style: const TextStyle(fontSize: 13, color: AppColors.sub),
+                          ),
+                          if (conf != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 14),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: conf > 80 ? AppColors.greenL : conf > 60 ? AppColors.warn : AppColors.danger,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text('$conf% confidence', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    if (_scanResult?['probabilities'] != null)
+                      CardWidget(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Probability Breakdown',
+                              style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 16, color: AppColors.text),
+                            ),
+                            const SizedBox(height: 14),
+                            ...((_scanResult?['probabilities'] as Map<String, int>).entries.toList()
+                              ..sort((a, b) => b.value.compareTo(a.value)))
+                              .map((entry) {
+                                final lbl = entry.key;
+                                final pct = entry.value;
+                                final isTop = lbl == disease;
+                                final recItem = diseaseRecs[lbl] ?? diseaseRecs['Healthy']!;
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(recItem.icon, style: const TextStyle(fontSize: 14)),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              lbl,
+                                              style: TextStyle(
+                                                color: isTop ? resultColor : AppColors.text,
+                                                fontWeight: isTop ? FontWeight.w700 : FontWeight.w400,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ),
+                                          Text(
+                                            '$pct%',
+                                            style: TextStyle(
+                                              color: isTop ? resultColor : AppColors.sub,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        height: 6,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.border,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: FractionallySizedBox(
+                                          alignment: Alignment.centerLeft,
+                                          widthFactor: pct / 100,
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color: isTop ? (isHealthy ? AppColors.greenL : AppColors.danger) : AppColors.sub,
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 18),
+                    CardWidget(
+                      child: Row(
+                        children: [
+                          const Text('👤', style: TextStyle(fontSize: 20)),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_selectedFarmer?.name ?? '', style: const TextStyle(fontWeight: FontWeight.w600)),
+                              Text(
+                                '📍 ${_selectedFarmer?.location ?? _selectedFarmer?.district ?? ''}',
+                                style: const TextStyle(fontSize: 12, color: AppColors.sub),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    if (!isHealthy)
+                      ButtonWidget(
+                        icon: '💊',
+                        text: 'View Recommendations',
+                        onPressed: () => setState(() => _stage = 'recommend'),
+                      ),
+                    const SizedBox(height: 10),
+                    ButtonWidget(
+                      variant: 'outline',
+                      icon: '📊',
+                      text: 'View Scan Comparison',
+                      onPressed: () => setState(() => _stage = 'compare'),
+                    ),
+                    const SizedBox(height: 10),
+                    ButtonWidget(
+                      variant: 'ghost',
+                      icon: '🔬',
+                      text: 'New Scan',
+                      onPressed: () => setState(() {
+                        _stage = 'pick';
+                        _scanResult = null;
+                        _disease = null;
+                        _previewImage = null;
+                      }),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecommendScreen() {
+    final disease = _disease ?? 'Unknown';
+    final rec = diseaseRecs[disease] ?? diseaseRecs['Healthy']!;
+
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            TopBar(title: 'Recommendations', onBack: () => setState(() => _stage = 'result')),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 100),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        color: rec.color.withOpacity(0.09),
+                        border: Border.all(color: rec.color.withOpacity(0.2)),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(rec.icon, style: const TextStyle(fontSize: 26)),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(disease, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: rec.color)),
+                              Text('for ${_selectedFarmer?.name ?? ''}', style: const TextStyle(fontSize: 12, color: AppColors.sub)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Fertilizers & Treatments',
+                      style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 18, color: AppColors.text),
+                    ),
+                    const SizedBox(height: 12),
+                    CardWidget(
+                      child: Column(
+                        children: rec.ferts.map((f) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            decoration: BoxDecoration(
+                              border: Border(bottom: BorderSide(color: AppColors.border)),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.green,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(child: Text(f, style: const TextStyle(fontSize: 14))),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Advisory Note',
+                      style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 18, color: AppColors.text),
+                    ),
+                    const SizedBox(height: 12),
+                    CardWidget(
+                      backgroundColor: AppColors.greenPale,
+                      child: Text('💡 ${rec.note}', style: const TextStyle(fontSize: 13, color: AppColors.green)),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Custom Notes',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.5, color: AppColors.sub),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      maxLines: 4,
+                      onChanged: (v) => _notes = v,
+                      decoration: InputDecoration(
+                        hintText: 'Add your observations...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.all(14),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ButtonWidget(
+                      icon: '✓',
+                      text: 'Save & Compare Scans',
+                      onPressed: () => setState(() => _stage = 'compare'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompareScreen() {
+    final reduction = _spread1 - _spread2;
+
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            TopBar(title: 'Scan Comparison', onBack: () => setState(() => _stage = 'result')),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 100),
+                child: Column(
+                  children: [
+                    Text(
+                      '${_selectedFarmer?.name ?? ''} · ${_disease ?? 'Disease'}',
+                      style: const TextStyle(fontSize: 13, color: AppColors.sub),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        _buildComparisonCard('Scan 1', '2 weeks ago', _spread1, AppColors.danger),
+                        const SizedBox(width: 12),
+                        _buildComparisonCard('Scan 2', 'Today', _spread2, AppColors.greenL),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    CardWidget(
+                      backgroundColor: reduction > 0 ? AppColors.greenPale : AppColors.dangerPale,
+                      child: Column(
+                        children: [
+                          Text(reduction > 0 ? '📉' : '📈', style: const TextStyle(fontSize: 44)),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${reduction.abs()}% ${reduction > 0 ? 'Reduction' : 'Increase'}',
+                            style: TextStyle(
+                              fontFamily: 'DM Serif Display',
+                              fontSize: 24,
+                              color: reduction > 0 ? AppColors.green : AppColors.danger,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            reduction > 0
+                                ? 'Treatment is working. Continue current plan.'
+                                : 'Disease spreading! Immediate action needed!',
+                            style: const TextStyle(fontSize: 13, color: AppColors.sub),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    ButtonWidget(
+                      variant: 'outline',
+                      icon: '🔬',
+                      text: 'Start New Scan',
+                      onPressed: () => setState(() {
+                        _stage = 'pick';
+                        _selectedFarmer = null;
+                        _previewImage = null;
+                        _disease = null;
+                        _scanResult = null;
+                      }),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildComparisonCard(String label, String sub, double spread, Color color) {
+    return Expanded(
+      child: CardWidget(
+        child: Column(
+          children: [
+            Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.sub)),
+            const SizedBox(height: 2),
+            Text(sub, style: const TextStyle(fontSize: 10, color: AppColors.sub)),
+            const SizedBox(height: 12),
+            _buildDonutChart(spread.toInt(), color, 100),
+            const SizedBox(height: 10),
+            Text('${spread.toInt()}%', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 22, color: color)),
+            const Text('spread', style: TextStyle(fontSize: 11, color: AppColors.sub)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDonutChart(int pct, Color color, double size) {
+    final r = size / 2;
+    final ir = r * 0.52;
+    final angle = (pct / 100) * 2 * pi - pi / 2;
+    final sa = -pi / 2;
+    final la = pct > 50 ? 1 : 0;
+    final x1 = r + r * cos(sa);
+    final y1 = r + r * sin(sa);
+    final x2 = r + r * cos(angle);
+    final y2 = r + r * sin(angle);
+    final ix1 = r + ir * cos(sa);
+    final iy1 = r + ir * sin(sa);
+    final ix2 = r + ir * cos(angle);
+    final iy2 = r + ir * sin(angle);
+
+    String path;
+    if (pct >= 99) {
+      path = 'M $r ${r - r} A $r $r 0 1 1 ${r - 0.01} ${r - r} L ${r - 0.01} ${r - ir} A $ir $ir 0 1 0 $r ${r - ir} Z';
+    } else {
+      path = 'M $ix1 $iy1 L $x1 $y1 A $r $r 0 $la 1 $x2 $y2 L $ix2 $iy2 A $ir $ir 0 $la 0 $ix1 $iy1 Z';
+    }
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: _DonutPainter(pct, color, r, ir, path),
+      ),
+    );
+  }
+
+  Widget _buildErrorScreen() {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            TopBar(title: 'Scan Failed', onBack: () => setState(() {
+              _stage = 'pick';
+            })),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('⚠️', style: TextStyle(fontSize: 64)),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Model API Error',
+                      style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 22, color: AppColors.danger),
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.dangerPale,
+                        border: Border.all(color: AppColors.danger.withOpacity(0.2)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Error Details', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.danger)),
+                          const SizedBox(height: 6),
+                          const Text('Could not reach model API', style: TextStyle(fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ButtonWidget(
+                      icon: '🧪',
+                      text: 'Use Demo Mode',
+                      onPressed: () => setState(() {
+                        _useDemo = true;
+                        _stage = 'pick';
+                      }),
+                    ),
+                    const SizedBox(height: 12),
+                    ButtonWidget(
+                      variant: 'ghost',
+                      text: '← Try Again',
+                      onPressed: () => setState(() => _stage = 'pick'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DonutPainter extends CustomPainter {
+  final int pct;
+  final Color color;
+  final double r;
+  final double ir;
+  final String path;
+
+  _DonutPainter(this.pct, this.color, this.r, this.ir, this.path);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paintBg = Paint()..color = AppColors.border;
+    canvas.drawCircle(Offset(r, r), r, paintBg);
+    final paintInner = Paint()..color = AppColors.white;
+    canvas.drawCircle(Offset(r, r), ir, paintInner);
+    final paintDonut = Paint()..color = color;
+    final pathObj = _parseSimplePath(path);
+    canvas.drawPath(pathObj, paintDonut);
+  }
+
+  Path _parseSimplePath(String path) {
+    final pathObj = Path();
+    final parts = path.split(' ');
+    int i = 0;
+    while (i < parts.length) {
+      final cmd = parts[i];
+      if (cmd == 'M') {
+        pathObj.moveTo(double.parse(parts[i + 1]), double.parse(parts[i + 2]));
+        i += 3;
+      } else if (cmd == 'L') {
+        pathObj.lineTo(double.parse(parts[i + 1]), double.parse(parts[i + 2]));
+        i += 3;
+      } else if (cmd == 'A') {
+        final rx = double.parse(parts[i + 1]);
+        final laf = double.parse(parts[i + 4]) == 1;
+        final sf = double.parse(parts[i + 5]) == 1;
+        final x = double.parse(parts[i + 6]);
+        final y = double.parse(parts[i + 7]);
+        pathObj.arcToPoint(Offset(x, y), radius: Radius.circular(rx), largeArc: laf, clockwise: sf);
+        i += 8;
+      } else if (cmd == 'Z') {
+        pathObj.close();
+        i++;
+      } else {
+        i++;
+      }
+    }
+    return pathObj;
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
