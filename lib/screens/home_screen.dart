@@ -71,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
-          setState(() => _selectedIndex = index);
+          setState(() => _selectedIndex = index); 
         },
         physics: const NeverScrollableScrollPhysics(),
         children: [
