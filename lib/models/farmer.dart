@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+
 class Farmer {
   final int id;
   final String name;
@@ -62,16 +65,39 @@ class Farmer {
     'lastScan': lastScan,
   };
 
-  factory Farmer.fromJson(Map<String, dynamic> json) => Farmer(
-    id: json['id'],
-    name: json['name'],
-    phone: json['phone'],
-    location: json['location'],
-    district: json['district'],
-    area: json['area'],
-    variety: json['variety'],
-    scans: json['scans'],
-    disease: json['disease'],
-    lastScan: json['lastScan'],
-  );
+  factory Farmer.fromJson(Map<String, dynamic> json) {
+    // Helper to format Laravel's ISO dates (e.g. 2026-04-17T08:10:41.000000Z) to "Apr 17"
+    String formatDate(String? iso) {
+      if (iso == null || iso.isEmpty) return 'No scans';
+      try {
+        final date = DateTime.parse(iso);
+        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return '${months[date.month - 1]} ${date.day}';
+      } catch (_) {
+        return iso.split('T').first;
+      }
+    }
+
+    try {
+      return Farmer(
+        id: json['id'] is int ? json['id'] : int.parse(json['id']?.toString() ?? '0'),
+        name: json['name']?.toString() ?? 'Unknown',
+        phone: json['phone']?.toString() ?? '',
+        location: json['location']?.toString() ?? json['district']?.toString() ?? '',
+        district: json['district']?.toString() ?? '',
+        area: json['area']?.toString() ?? '0',
+        variety: json['variety']?.toString() ?? '',
+        scans: json['scans'] is int ? json['scans'] : int.tryParse(json['scans']?.toString() ?? '0') ?? 0,
+        disease: json['disease']?.toString() ?? 'None',
+        lastScan: json['last_scan'] != null 
+            ? formatDate(json['last_scan']?.toString()) 
+            : json['created_at'] != null 
+                ? formatDate(json['created_at']?.toString())
+                : 'No scans',
+      );
+    } catch (e) {
+      debugPrint("Error parsing Farmer: $e");
+      return Farmer(id: 0, name: 'Error Loading', phone: '', location: '', district: '', area: '', variety: '', scans: 0, disease: 'Unknown', lastScan: '');
+    }
+  }
 }

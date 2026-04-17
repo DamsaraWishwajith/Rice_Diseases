@@ -1,16 +1,14 @@
-import 'dart:math';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:tflite_flutter/tflite_flutter.dart';
-import 'package:image/image.dart' as img;
+import 'dart:math';
+import 'dart:io';
 import '../theme/app_colors.dart';
 import '../widgets/card_widget.dart';
 import '../widgets/top_bar.dart';
 import '../widgets/button_widget.dart';
-import '../widgets/tag_widget.dart';
 import '../models/farmer.dart';
 import '../models/disease_rec.dart';
+import '../services/disease_service.dart';
 
 class ScanScreen extends StatefulWidget {
   final List<Farmer> farmers;
@@ -24,30 +22,10 @@ class ScanScreen extends StatefulWidget {
 class _ScanScreenState extends State<ScanScreen> {
   String _stage = 'pick'; // pick, scanning, result, recommend, compare, error
   Farmer? _selectedFarmer;
-  Interpreter? _interpreter;
-  final List<String> _labels = ['Bacterialblight', 'Brownspot', 'Healthy', 'Others', 'Sheath_blight'];
 
-  @override
-  void initState() {
-    super.initState();
-    _loadModel();
-  }
-
-  Future<void> _loadModel() async {
-    try {
-      _interpreter = await Interpreter.fromAsset('assets/models/model.tflite');
-      debugPrint('Model loaded successfully');
-    } catch (e) {
-      debugPrint('Failed to load model: $e');
-    }
-  }
-
-  @override
-  void dispose() {
-    _interpreter?.close();
-    super.dispose();
-  }
-
+  final ImagePicker _picker = ImagePicker();
+  final TextEditingController _farmerSearchController = TextEditingController();
+  File? _imageFile;
   String? _disease;
   String? _previewImage;
   int _scanStep = 0;
@@ -56,8 +34,34 @@ class _ScanScreenState extends State<ScanScreen> {
   bool _useDemo = true;
   double _spread1 = 58;
   double _spread2 = 34;
-  final ImagePicker _picker = ImagePicker();
-  File? _imageFile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadModel();
+  }
+
+  @override
+  void didUpdateWidget(covariant ScanScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.farmers != widget.farmers) {
+      _filterFarmers();
+    }
+  }
+
+  Future<void> _loadModel() async {
+    await DiseaseService().initModel();
+  }
+
+  void _filterFarmers() {
+    // This method is now handled locally in the modal or via build
+  }
+
+  @override
+  void dispose() {
+    _farmerSearchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -112,16 +116,56 @@ class _ScanScreenState extends State<ScanScreen> {
                       style: TextStyle(fontSize: 13, color: AppColors.sub),
                     ),
                     const SizedBox(height: 18),
-                    const Text(
-                      'Select Farmer',
-                      style: TextStyle(
-                        fontFamily: 'DM Serif Display',
-                        fontSize: 18,
-                        color: AppColors.text,
+                     GestureDetector(
+                      onTap: () => _showFarmerSelector(),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.border.withOpacity(0.5)),
+                          boxShadow: [
+                            BoxShadow(color: AppColors.forest.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: _selectedFarmer != null ? AppColors.greenPale : AppColors.bg,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(child: Text(_selectedFarmer != null ? '👤' : '🔍', style: const TextStyle(fontSize: 20))),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _selectedFarmer?.name ?? 'Select Farmer',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15,
+                                      color: _selectedFarmer != null ? AppColors.text : AppColors.sub,
+                                    ),
+                                  ),
+                                  Text(
+                                    _selectedFarmer != null 
+                                      ? _selectedFarmer!.location
+                                      : 'Tap to search & associate scan',
+                                    style: const TextStyle(fontSize: 12, color: AppColors.sub),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.keyboard_arrow_down, color: AppColors.sub),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    ...widget.farmers.map((f) => _buildFarmerTile(f)),
                     if (_selectedFarmer != null) ...[
                       const SizedBox(height: 24),
                       const Text(
@@ -176,38 +220,130 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-  Widget _buildFarmerTile(Farmer f) {
-    final isSelected = _selectedFarmer?.id == f.id;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedFarmer = f),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.greenPale : AppColors.white,
-          border: Border.all(color: isSelected ? AppColors.green.withOpacity(0.5) : AppColors.border.withOpacity(0.6), width: 1.0),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(color: AppColors.forest.withOpacity(0.03), blurRadius: 12, offset: const Offset(0, 4)),
-          ],
-        ),
-        child: Row(
-          children: [
-            const Text('👤', style: TextStyle(fontSize: 18)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(f.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.text)),
-                  Text(f.location ?? f.district, style: const TextStyle(fontSize: 12, color: AppColors.sub)),
-                ],
+  void _showFarmerSelector() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: AppColors.bg,
+            borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
+          ),
+          child: Column(
+            children: [
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 24),
+              const Text('Select Farmer', style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 24, color: AppColors.forest)),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.border.withOpacity(0.5)),
+                ),
+                child: TextField(
+                  controller: _farmerSearchController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'Search by name or district...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: _farmerSearchController.text.isNotEmpty 
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18), 
+                          onPressed: () {
+                            _farmerSearchController.clear();
+                            (context as Element).markNeedsBuild();
+                          }
+                        ) 
+                      : null,
+                    border: InputBorder.none,
+                  ),
+                  onChanged: (v) {
+                    (context as Element).markNeedsBuild();
+                  },
+                ),
               ),
-            ),
-            if (isSelected) const Text('✓', style: TextStyle(fontSize: 18, color: AppColors.green)),
-          ],
-        ),
-      ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: Builder(
+                  builder: (context) {
+                    final query = _farmerSearchController.text.toLowerCase();
+                    final filtered = widget.farmers.where((f) => 
+                      f.name.toLowerCase().contains(query) || 
+                      f.location.toLowerCase().contains(query)
+                    ).toList();
+
+                    if (filtered.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('🔍', style: TextStyle(fontSize: 40)),
+                            const SizedBox(height: 12),
+                            Text(
+                              widget.farmers.isEmpty ? 'No farmers found in database' : 'No matching farmers found', 
+                              style: const TextStyle(color: AppColors.sub)
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final f = filtered[index];
+                        final isSel = _selectedFarmer?.id == f.id;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: CardWidget(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: InkWell(
+                              onTap: () {
+                                setState(() => _selectedFarmer = f);
+                                Navigator.pop(context);
+                              },
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: isSel ? AppColors.greenPale : AppColors.bg,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Center(child: Text('👤')),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(f.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                                        Text(f.location, style: const TextStyle(fontSize: 12, color: AppColors.sub)),
+                                      ],
+                                    ),
+                                  ),
+                                  if (isSel) const Icon(Icons.check_circle, color: AppColors.green),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -311,58 +447,21 @@ class _ScanScreenState extends State<ScanScreen> {
     await Future.delayed(const Duration(milliseconds: 600));
     setState(() => _scanStep = 1);
     
-    if (_interpreter == null) {
-      setState(() => _stage = 'error');
-      return;
-    }
-
     try {
       setState(() => _scanStep = 2);
       
-      final imageBytes = await _imageFile!.readAsBytes();
-      img.Image? originalImage = img.decodeImage(imageBytes);
-      if (originalImage == null) throw Exception("Failed to decode image");
+      final result = await DiseaseService().predict(_imageFile!);
       
-      img.Image resizedImage = img.copyResize(originalImage, width: 224, height: 224);
-      
-      var input = List.generate(1, (i) => List.generate(224, (j) => List.generate(224, (k) => List.generate(3, (l) => 0.0))));
-      for (int y = 0; y < 224; y++) {
-        for (int x = 0; x < 224; x++) {
-          final pixel = resizedImage.getPixel(x, y);
-          input[0][y][x][0] = pixel.r.toDouble();
-          input[0][y][x][1] = pixel.g.toDouble();
-          input[0][y][x][2] = pixel.b.toDouble();
-        }
-      }
-      
-      var output = List.generate(1, (i) => List.filled(_labels.length, 0.0));
-      
-      _interpreter!.run(input, output);
       setState(() => _scanStep = 3);
       await Future.delayed(const Duration(milliseconds: 600));
 
-      List<double> probabilities = output[0];
-      int maxIdx = 0;
-      double maxProb = probabilities[0];
-      for (int i = 1; i < probabilities.length; i++) {
-        if (probabilities[i] > maxProb) {
-          maxProb = probabilities[i];
-          maxIdx = i;
-        }
-      }
-      
-      final probs = <String, int>{};
-      for (int i = 0; i < _labels.length; i++) {
-        probs[_labels[i]] = (probabilities[i] * 100).round();
-      }
-      
       setState(() {
-        _scanResult = {'disease': _labels[maxIdx], 'confidence': (maxProb * 100).round(), 'probabilities': probs};
-        _disease = _labels[maxIdx];
+        _scanResult = result;
+        _disease = result['disease'] as String;
         _stage = 'result';
       });
     } catch (e) {
-      debugPrint("Inference error: $e");
+      debugPrint("Analysis error: $e");
       setState(() => _stage = 'error');
     }
   }

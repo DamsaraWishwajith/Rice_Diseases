@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'alerts_screen.dart';
 import 'farmers_screen.dart';
 import 'more_screen.dart';
@@ -10,24 +12,7 @@ import '../models/supervisor.dart';
 import '../models/farmer.dart';
 import '../models/alert.dart';
 import '../models/disease_rec.dart';
-
-final List<Farmer> initialFarmers = [
-  Farmer(
-    id: 1, name: "Kamal Perera", phone: "077-1234567",
-    location: "Anuradhapura North", district: "Anuradhapura", area: "3.5 ac",
-    variety: "Suwandel", scans: 3, disease: "Blast", lastScan: "Feb 12",
-  ),
-  Farmer(
-    id: 2, name: "Nimal Silva", phone: "071-9876543",
-    location: "Polonnaruwa East", district: "Anuradhapura", area: "5.0 ac",
-    variety: "Nadu", scans: 2, disease: "Sheath Blight", lastScan: "Feb 15",
-  ),
-  Farmer(
-    id: 3, name: "Sunil Fernando", phone: "076-5551234",
-    location: "Kurunegala Central", district: "Anuradhapura", area: "2.2 ac",
-    variety: "Rathu Heenati", scans: 4, disease: "Brown Spot", lastScan: "Feb 17",
-  ),
-];
+import '../services/disease_service.dart';
 
 final List<Alert> initialAlerts = [
   Alert(id: 1, farmer: "Kamal Perera", disease: "Blast", severity: "High", time: "2h ago", read: false),
@@ -47,11 +32,66 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   late PageController _pageController;
+  List<Farmer> _farmers = [];
+  bool _isLoadingFarmers = true;
+  String _farmersError = '';
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _selectedIndex);
+    _fetchFarmers();
+    // Pre-initialize AI model for faster first scan
+    DiseaseService().initModel();
+  }
+
+  Future<void> _fetchFarmers() async {
+    setState(() {
+      _isLoadingFarmers = true;
+      _farmersError = '';
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.8.133:8002/api/farmers'),
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final dynamic decoded = jsonDecode(response.body);
+        List<dynamic> data;
+        if (decoded is List) {
+          data = decoded;
+        } else if (decoded is Map && decoded['data'] is List) {
+          data = decoded['data'];
+        } else if (decoded is Map && decoded['farmers'] is List) {
+          data = decoded['farmers'];
+        } else {
+          data = [];
+        }
+
+        if (!mounted) return;
+        setState(() {
+          _farmers = data.map((f) => Farmer.fromJson(f)).toList();
+          _isLoadingFarmers = false;
+        });
+      } else {
+        if (!mounted) return;
+        setState(() {
+          _farmersError = 'Failed to load farmers (Status: ${response.statusCode})';
+          _isLoadingFarmers = false;
+        });
+      }
+    } catch (e) {
+      String msg = 'Connection error. Is server running?';
+      if (e.toString().contains('TimeoutException')) {
+        msg = 'Connection timed out. Check your IP/Network.';
+      }
+      if (!mounted) return;
+      setState(() {
+        _farmersError = msg;
+        _isLoadingFarmers = false;
+      });
+    }
   }
 
   @override
@@ -76,10 +116,10 @@ class _HomeScreenState extends State<HomeScreen> {
         physics: const NeverScrollableScrollPhysics(),
         children: [
           _buildHomeContent(name, unreadCount),
-          FarmersScreen(farmers: initialFarmers),
-          ScanScreen(farmers: initialFarmers),
+          FarmersScreen(farmers: _farmers, supervisor: widget.supervisor, onRefresh: _fetchFarmers),
+          ScanScreen(farmers: _farmers),
           AlertsScreen(supervisor: widget.supervisor),
-          MoreScreen(farmers: initialFarmers, supervisor: widget.supervisor),
+          MoreScreen(farmers: _farmers, supervisor: widget.supervisor),
         ],
       ),
       bottomNavigationBar: _buildBottomNav(),
@@ -204,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 25),
           Row(
             children: [
-              _buildStatCard('👤', '24', 'Farmers'),
+              _buildStatCard('👤', _isLoadingFarmers ? '...' : _farmers.length.toString(), 'Farmers'),
               const SizedBox(width: 12),
               _buildStatCard('🔬', '7', 'Scans'),
               const SizedBox(width: 12),
@@ -415,64 +455,80 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            height: 145,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: initialFarmers.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (context, index) {
-                final farmer = initialFarmers[index];
-                final rec = diseaseRecs[farmer.disease] ?? diseaseRecs['Healthy']!;
-                return Container(
-                  width: 128,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.border.withOpacity(0.6), width: 0.8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.forest.withOpacity(0.04),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: AppColors.greenPale,
-                          borderRadius: BorderRadius.circular(11),
+          if (_isLoadingFarmers)
+            const Center(child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: CircularProgressIndicator(),
+            ))
+          else if (_farmersError.isNotEmpty)
+            Center(child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Text(_farmersError, style: const TextStyle(color: AppColors.danger)),
+            ))
+          else if (_farmers.isEmpty)
+            const Center(child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Text('No farmers added yet.', style: TextStyle(color: AppColors.sub)),
+            ))
+          else
+            SizedBox(
+              height: 145,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _farmers.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  final farmer = _farmers[index];
+                  final rec = diseaseRecs[farmer.disease] ?? diseaseRecs['Healthy']!;
+                  return Container(
+                    width: 128,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.border.withOpacity(0.6), width: 0.8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.forest.withOpacity(0.04),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
                         ),
-                        child: const Center(child: Text('👤', style: TextStyle(fontSize: 16))),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        farmer.name.split(' ').first,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppColors.text),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        farmer.variety,
-                        style: const TextStyle(fontSize: 13, color: AppColors.sub),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                      const SizedBox(height: 8),
-                      TagWidget(text: farmer.disease, color: rec.color),
-                    ],
-                  ),
-                );
-              },
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: AppColors.greenPale,
+                            borderRadius: BorderRadius.circular(11),
+                          ),
+                          child: const Center(child: Text('👤', style: TextStyle(fontSize: 16))),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          farmer.name.split(' ').first,
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppColors.text),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          farmer.variety,
+                          style: const TextStyle(fontSize: 13, color: AppColors.sub),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        const SizedBox(height: 8),
+                        TagWidget(text: farmer.disease, color: rec.color),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
         ],
       ),
     );

@@ -69,147 +69,153 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 68,
-                        height: 68,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withOpacity(0.22), width: 1.5),
-                        ),
-                        child: const Center(
-                          child: Text('🌾', style: TextStyle(fontSize: 32)),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'Rice Guard',
-                        style: TextStyle(
-                          fontFamily: 'DM Serif Display',
-                          fontSize: 38,
-                          color: Colors.white,
-                          height: 1.1,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Disease Detection System · Sri Lanka',
-                        style: TextStyle(
-                          color: Colors.white60,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(32),
-                      topRight: Radius.circular(32),
-                    ),
-                    boxShadow: [
-                      BoxShadow(color: AppColors.forest.withOpacity(0.15), blurRadius: 40, offset: const Offset(0, -10)),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Supervisor Login',
-                          style: TextStyle(
-                            fontFamily: 'DM Serif Display',
-                            fontSize: 22,
-                            color: AppColors.text,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      InputField(
-                        label: 'Email',
-                        icon: '✉️',
-                        value: _emailController.text,
-                        onChanged: (v) => _emailController.text = v,
-                        placeholder: 'Enter your email',
-                      ),
-                      InputField(
-                        label: 'Password',
-                        icon: '🔑',
-                        type: 'password',
-                        value: _passwordController.text,
-                        onChanged: (v) => _passwordController.text = v,
-                        placeholder: '••••••••',
-                      ),
-                      if (_error.isNotEmpty)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: AppColors.dangerPale,
-                            border: Border.all(color: AppColors.danger.withOpacity(0.27)),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
+            Positioned.fill(
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('⚠️ ', style: TextStyle(fontSize: 13)),
-                              Expanded(
-                                child: Text(
-                                  _error,
-                                  style: const TextStyle(color: AppColors.danger, fontSize: 13),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+                              Container(
+                                width: 68,
+                                height: 68,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: Colors.white.withOpacity(0.22), width: 1.5),
+                                ),
+                                child: const Center(
+                                  child: Text('🌾', style: TextStyle(fontSize: 32)),
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              const Text(
+                                'Rice Guard',
+                                style: TextStyle(
+                                  fontFamily: 'DM Serif Display',
+                                  fontSize: 38,
+                                  color: Colors.white,
+                                  height: 1.1,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Disease Detection System · Sri Lanka',
+                                style: TextStyle(
+                                  color: Colors.white60,
+                                  fontSize: 14,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      const SizedBox(height: 8),
-                      ButtonWidget(
-                        text: _isLoading ? 'Please wait...' : 'Sign In →',
-                        onPressed: _isLoading ? () {} : _handleLogin,
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            "Don't have an account?",
-                            style: TextStyle(color: AppColors.sub, fontSize: 13),
-                          ),
-                          const SizedBox(width: 6),
-                          GestureDetector(
-                            onTap: () => setState(() => _showCreate = true),
-                            child: const Text(
-                              'Create Account',
-                              style: TextStyle(
-                                color: AppColors.green,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(32),
+                              topRight: Radius.circular(32),
                             ),
+                            boxShadow: [
+                              BoxShadow(color: AppColors.forest.withOpacity(0.15), blurRadius: 40, offset: const Offset(0, -10)),
+                            ],
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Department of Agriculture · Sri Lanka',
-                        style: TextStyle(color: AppColors.sub, fontSize: 12),
-                      ),
-                    ],
+                          child: Column(
+                            children: [
+                              const Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'Supervisor Login',
+                                  style: TextStyle(
+                                    fontFamily: 'DM Serif Display',
+                                    fontSize: 22,
+                                    color: AppColors.text,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              InputField(
+                                label: 'Email',
+                                icon: '✉️',
+                                value: _emailController.text,
+                                onChanged: (v) => _emailController.text = v,
+                                placeholder: 'Enter your email',
+                              ),
+                              InputField(
+                                label: 'Password',
+                                icon: '🔑',
+                                type: 'password',
+                                value: _passwordController.text,
+                                onChanged: (v) => _passwordController.text = v,
+                                placeholder: '••••••••',
+                              ),
+                              if (_error.isNotEmpty)
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.dangerPale,
+                                    border: Border.all(color: AppColors.danger.withOpacity(0.27)),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Text('⚠️ ', style: TextStyle(fontSize: 13)),
+                                      Expanded(
+                                        child: Text(
+                                          _error,
+                                          style: const TextStyle(color: AppColors.danger, fontSize: 13),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              const SizedBox(height: 8),
+                              ButtonWidget(
+                                text: _isLoading ? 'Please wait...' : 'Sign In →',
+                                onPressed: _isLoading ? () {} : _handleLogin,
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text(
+                                    "Don't have an account?",
+                                    style: TextStyle(color: AppColors.sub, fontSize: 13),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  GestureDetector(
+                                    onTap: () => setState(() => _showCreate = true),
+                                    child: const Text(
+                                      'Create Account',
+                                      style: TextStyle(
+                                        color: AppColors.green,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 32),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -220,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildCreateAccount() {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -241,169 +247,178 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 68,
-                        height: 68,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withOpacity(0.22), width: 1.5),
-                        ),
-                        child: const Center(
-                          child: Text('🌾', style: TextStyle(fontSize: 32)),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'Rice Guard',
-                        style: TextStyle(
-                          fontFamily: 'DM Serif Display',
-                          fontSize: 38,
-                          color: Colors.white,
-                          height: 1.1,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Disease Detection System · Sri Lanka',
-                        style: TextStyle(
-                          color: Colors.white60,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(32),
-                      topRight: Radius.circular(32),
-                    ),
-                    boxShadow: [
-                      BoxShadow(color: AppColors.forest.withOpacity(0.15), blurRadius: 40, offset: const Offset(0, -10)),
-                    ],
-                  ),
-                  child: SingleChildScrollView(
+            Positioned.fill(
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  SliverFillRemaining(
+                    hasScrollBody: false,
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Create Account',
-                            style: TextStyle(
-                              fontFamily: 'DM Serif Display',
-                              fontSize: 22,
-                              color: AppColors.text,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        InputField(
-                          label: 'Username',
-                          icon: '👤',
-                          value: _usernameController.text,
-                          onChanged: (v) => _usernameController.text = v,
-                          placeholder: 'e.g. john_supervisor',
-                        ),
-                        InputField(
-                          label: 'Email',
-                          icon: '✉️',
-                          type: 'email',
-                          value: _emailController.text,
-                          onChanged: (v) => _emailController.text = v,
-                          placeholder: 'you@doa.gov.lk',
-                        ),
-                        InputField(
-                          label: 'Password',
-                          icon: '🔑',
-                          type: 'password',
-                          value: _passwordController.text,
-                          onChanged: (v) => _passwordController.text = v,
-                          placeholder: 'Min. 6 characters',
-                        ),
-                        InputField(
-                          label: 'Confirm Password',
-                          icon: '🔒',
-                          type: 'password',
-                          value: _confirmController.text,
-                          onChanged: (v) => _confirmController.text = v,
-                          placeholder: 'Re-enter password',
-                        ),
-                        InputField(
-                          label: 'District',
-                          icon: '📍',
-                          value: _selectedDistrict,
-                          onChanged: (v) => _selectedDistrict = v,
-                          options: const [
-                            'Anuradhapura', 'Polonnaruwa', 'Kurunegala', 'Kandy', 'Galle',
-                            'Hambantota', 'Matale', 'Jaffna', 'Batticaloa'
-                          ],
-                        ),
-                        if (_error.isNotEmpty)
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: AppColors.dangerPale,
-                              border: Border.all(color: AppColors.danger.withOpacity(0.27)),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              children: [
-                                const Text('⚠️ ', style: TextStyle(fontSize: 13)),
-                                Expanded(
-                                  child: Text(
-                                    _error,
-                                    style: const TextStyle(color: AppColors.danger, fontSize: 13),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 68,
+                                height: 68,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: Colors.white.withOpacity(0.22), width: 1.5),
                                 ),
-                              ],
-                            ),
-                          ),
-                        ButtonWidget(
-                          text: _isLoading ? 'Creating Account...' : 'Create Account →',
-                          onPressed: _isLoading ? () {} : _handleCreate,
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              'Already have an account?',
-                              style: TextStyle(color: AppColors.sub, fontSize: 13),
-                            ),
-                            const SizedBox(width: 6),
-                            GestureDetector(
-                              onTap: () => setState(() => _showCreate = false),
-                              child: const Text(
-                                'Sign In',
-                                style: TextStyle(
-                                  color: AppColors.green,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
+                                child: const Center(
+                                  child: Text('🌾', style: TextStyle(fontSize: 32)),
                                 ),
                               ),
+                              const SizedBox(height: 18),
+                              const Text(
+                                'Rice Guard',
+                                style: TextStyle(
+                                  fontFamily: 'DM Serif Display',
+                                  fontSize: 38,
+                                  color: Colors.white,
+                                  height: 1.1,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Disease Detection System · Sri Lanka',
+                                style: TextStyle(
+                                  color: Colors.white60,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(32),
+                              topRight: Radius.circular(32),
                             ),
-                          ],
+                            boxShadow: [
+                              BoxShadow(color: AppColors.forest.withOpacity(0.15), blurRadius: 40, offset: const Offset(0, -10)),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              const Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'Create Account',
+                                  style: TextStyle(
+                                    fontFamily: 'DM Serif Display',
+                                    fontSize: 22,
+                                    color: AppColors.text,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              InputField(
+                                label: 'Username',
+                                icon: '👤',
+                                value: _usernameController.text,
+                                onChanged: (v) => _usernameController.text = v,
+                                placeholder: 'e.g. john_supervisor',
+                              ),
+                              InputField(
+                                label: 'Email',
+                                icon: '✉️',
+                                type: 'email',
+                                value: _emailController.text,
+                                onChanged: (v) => _emailController.text = v,
+                                placeholder: 'you@doa.gov.lk',
+                              ),
+                              InputField(
+                                label: 'Password',
+                                icon: '🔑',
+                                type: 'password',
+                                value: _passwordController.text,
+                                onChanged: (v) => _passwordController.text = v,
+                                placeholder: 'Min. 6 characters',
+                              ),
+                              InputField(
+                                label: 'Confirm Password',
+                                icon: '🔒',
+                                type: 'password',
+                                value: _confirmController.text,
+                                onChanged: (v) => _confirmController.text = v,
+                                placeholder: 'Re-enter password',
+                              ),
+                              InputField(
+                                label: 'District',
+                                icon: '📍',
+                                value: _selectedDistrict,
+                                onChanged: (v) => _selectedDistrict = v,
+                                options: const [
+                                  'Anuradhapura', 'Polonnaruwa', 'Kurunegala', 'Kandy', 'Galle',
+                                  'Hambantota', 'Matale', 'Jaffna', 'Batticaloa'
+                                ],
+                              ),
+                              if (_error.isNotEmpty)
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.dangerPale,
+                                    border: Border.all(color: AppColors.danger.withOpacity(0.27)),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Text('⚠️ ', style: TextStyle(fontSize: 13)),
+                                      Expanded(
+                                        child: Text(
+                                          _error,
+                                          style: const TextStyle(color: AppColors.danger, fontSize: 13),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ButtonWidget(
+                                text: _isLoading ? 'Creating Account...' : 'Create Account →',
+                                onPressed: _isLoading ? () {} : _handleCreate,
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text(
+                                    'Already have an account?',
+                                    style: TextStyle(color: AppColors.sub, fontSize: 13),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  GestureDetector(
+                                    onTap: () => setState(() => _showCreate = false),
+                                    child: const Text(
+                                      'Sign In',
+                                      style: TextStyle(
+                                        color: AppColors.green,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 32),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -505,6 +520,12 @@ class _LoginScreenState extends State<LoginScreen> {
         await prefs.setString('supervisor', jsonEncode(supervisor.toJson()));
 
         if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Account created successfully!'),
+              backgroundColor: AppColors.green,
+            ),
+          );
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => HomeScreen(supervisor: supervisor)),
