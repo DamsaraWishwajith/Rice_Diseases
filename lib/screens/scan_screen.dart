@@ -561,7 +561,12 @@ class _ScanScreenState extends State<ScanScreen> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Text('Keras model · Rice disease classifier · 4 classes', style: TextStyle(fontSize: 12, color: AppColors.sub)),
+                      const Flexible(
+                        child: Text(
+                          'Keras model · Rice disease classifier · 4 classes', 
+                          style: TextStyle(fontSize: 12, color: AppColors.sub),
+                        ),
+                      ),
                     ],
                   ),
                 ),
