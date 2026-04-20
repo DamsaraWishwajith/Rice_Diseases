@@ -7,6 +7,7 @@ class ButtonWidget extends StatelessWidget {
   final String? icon;
   final String? variant; // primary, green, outline, ghost, accent, danger
   final bool disabled;
+  final bool loading;
 
   const ButtonWidget({
     super.key,
@@ -15,6 +16,7 @@ class ButtonWidget extends StatelessWidget {
     this.icon,
     this.variant = 'primary',
     this.disabled = false,
+    this.loading = false,
   });
 
   @override
@@ -80,23 +82,29 @@ class ButtonWidget extends StatelessWidget {
           shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
           padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (icon != null) ...[
-              Text(icon!, style: const TextStyle(fontSize: 18)),
-              const SizedBox(width: 8),
-            ],
-            Text(
-              text,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.3,
-              ),
+        child: loading 
+          ? const SizedBox(
+              width: 20, 
+              height: 20, 
+              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (icon != null) ...[
+                  Text(icon!, style: const TextStyle(fontSize: 18)),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  text,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
       ),
     );
   }

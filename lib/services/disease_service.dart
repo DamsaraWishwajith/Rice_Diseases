@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:image/image.dart' as img;
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class DiseaseService {
   static final DiseaseService _instance = DiseaseService._internal();
@@ -94,6 +96,32 @@ class DiseaseService {
     } catch (e) {
       debugPrint("Inference error: $e");
       rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getDiseaseInfo(String label) async {
+    // Map internal label to user-friendly label if needed
+    String searchLabel = label;
+    if (label == 'Bacterialblight') searchLabel = 'Bacterial Blight';
+    if (label == 'Brownspot') searchLabel = 'Brown Spot';
+    if (label == 'Sheath_blight') searchLabel = 'Sheath Blight';
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://192.168.8.133:8002/api/disease-info'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'name': searchLabel}),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        debugPrint('API Error: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Error fetching disease info: $e');
+      return null;
     }
   }
 

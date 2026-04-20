@@ -30,6 +30,8 @@ class _ScanScreenState extends State<ScanScreen> {
   String? _previewImage;
   int _scanStep = 0;
   Map<String, dynamic>? _scanResult;
+  Map<String, dynamic>? _diseaseInfo;
+  bool _fetchingInfo = false;
   String _notes = '';
   bool _useDemo = true;
   double _spread1 = 58;
@@ -466,6 +468,31 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
+  void _fetchRecommendation() async {
+    if (_disease == null) return;
+    
+    setState(() => _fetchingInfo = true);
+    
+    final info = await DiseaseService().getDiseaseInfo(_disease!);
+    
+    if (mounted) {
+      setState(() {
+        _diseaseInfo = info;
+        _fetchingInfo = false;
+        _stage = 'recommend';
+      });
+      
+      if (info == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not fetch latest info. Showing default results.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildScanningScreen() {
     final steps = ['Uploading image...', 'Preprocessing leaf...', 'Running AI model...', 'Finalizing results...'];
     final progress = [20, 45, 80, 98];
@@ -797,9 +824,10 @@ class _ScanScreenState extends State<ScanScreen> {
                     const SizedBox(height: 18),
                     if (!isHealthy)
                       ButtonWidget(
+                        loading: _fetchingInfo,
                         icon: '💊',
                         text: 'View Recommendations',
-                        onPressed: () => setState(() => _stage = 'recommend'),
+                        onPressed: _fetchRecommendation,
                       ),
                     const SizedBox(height: 10),
                     ButtonWidget(
@@ -868,21 +896,55 @@ class _ScanScreenState extends State<ScanScreen> {
                     ),
                     const SizedBox(height: 18),
                     const Text(
-                      'Fertilizers & Treatments',
+                      'Scanned Specimen',
+                      style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 18, color: AppColors.text),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_imageFile != null)
+                      CardWidget(
+                        padding: EdgeInsets.zero,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.file(
+                            _imageFile!,
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'About Disease',
+                      style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 18, color: AppColors.text),
+                    ),
+                    const SizedBox(height: 12),
+                    CardWidget(
+                      child: Text(
+                        _diseaseInfo?['note'] ?? rec.note,
+                        style: const TextStyle(fontSize: 14, color: AppColors.sub, height: 1.5),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Solutions & Treatments',
                       style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 18, color: AppColors.text),
                     ),
                     const SizedBox(height: 12),
                     CardWidget(
                       child: Column(
-                        children: rec.ferts.map((f) {
+                        children: ((_diseaseInfo?['solutions'] as String?)?.split('\n') ?? rec.ferts).map((f) {
+                          if (f.trim().isEmpty) return const SizedBox.shrink();
                           return Container(
                             padding: const EdgeInsets.symmetric(vertical: 11),
                             decoration: BoxDecoration(
                               border: Border(bottom: BorderSide(color: AppColors.border)),
                             ),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Container(
+                                  margin: const EdgeInsets.only(top: 6),
                                   width: 8,
                                   height: 8,
                                   decoration: BoxDecoration(
@@ -891,23 +953,14 @@ class _ScanScreenState extends State<ScanScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                Expanded(child: Text(f, style: const TextStyle(fontSize: 14))),
+                                Expanded(child: Text(f.replaceAll('•', '').trim(), style: const TextStyle(fontSize: 14))),
                               ],
                             ),
                           );
                         }).toList(),
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    const Text(
-                      'Advisory Note',
-                      style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 18, color: AppColors.text),
-                    ),
-                    const SizedBox(height: 12),
-                    CardWidget(
-                      backgroundColor: AppColors.greenPale,
-                      child: Text('💡 ${rec.note}', style: const TextStyle(fontSize: 13, color: AppColors.green)),
-                    ),
+                    
                     const SizedBox(height: 18),
                     const Text(
                       'Custom Notes',
@@ -933,7 +986,7 @@ class _ScanScreenState extends State<ScanScreen> {
                     const SizedBox(height: 16),
                     ButtonWidget(
                       icon: '✓',
-                      text: 'Save & Compare Scans',
+                      text: 'Save Scans',
                       onPressed: () => setState(() => _stage = 'compare'),
                     ),
                   ],
