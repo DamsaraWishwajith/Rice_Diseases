@@ -21,7 +21,11 @@ class FarmersScreen extends StatefulWidget {
   final Supervisor supervisor;
   final VoidCallback onRefresh;
 
-  const FarmersScreen({super.key, required this.farmers, required this.supervisor, required this.onRefresh});
+  const FarmersScreen(
+      {super.key,
+      required this.farmers,
+      required this.supervisor,
+      required this.onRefresh});
 
   @override
   State<FarmersScreen> createState() => _FarmersScreenState();
@@ -50,6 +54,7 @@ class _FarmersScreenState extends State<FarmersScreen> {
   @override
   void initState() {
     super.initState();
+    _form['district'] = widget.supervisor.district;
     _filteredFarmers = List.from(widget.farmers);
     _searchController.addListener(_filterFarmers);
   }
@@ -76,8 +81,8 @@ class _FarmersScreenState extends State<FarmersScreen> {
                   .toLowerCase()
                   .contains(_searchController.text.toLowerCase()) ||
               (f.location
-                      .toLowerCase()
-                      .contains(_searchController.text.toLowerCase())))
+                  .toLowerCase()
+                  .contains(_searchController.text.toLowerCase())))
           .toList();
     });
   }
@@ -98,7 +103,7 @@ class _FarmersScreenState extends State<FarmersScreen> {
 
   Widget _buildMainContent() {
     if (_subPage == 'add') return _buildAddScreen();
-    if (_subPage == 'detail' && _selectedFarmer != null) return _buildDetailScreen();
+    if (_subPage == 'detail' && _selectedFarmer != null) ;
     return _buildListScreen();
   }
 
@@ -131,8 +136,7 @@ class _FarmersScreenState extends State<FarmersScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.white.withOpacity(0.8),
                     border: Border.all(
-                        color: AppColors.border.withOpacity(0.9),
-                        width: 1.0),
+                        color: AppColors.border.withOpacity(0.9), width: 1.0),
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
@@ -145,13 +149,11 @@ class _FarmersScreenState extends State<FarmersScreen> {
                     controller: _searchController,
                     decoration: const InputDecoration(
                       hintText: 'Search farmers...',
-                      hintStyle:
-                          TextStyle(color: AppColors.sub, fontSize: 14),
-                      prefixIcon:
-                          Text('🔍', style: TextStyle(fontSize: 15)),
+                      hintStyle: TextStyle(color: AppColors.sub, fontSize: 14),
+                      prefixIcon: Text('🔍', style: TextStyle(fontSize: 15)),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     ),
                   ),
                 ),
@@ -188,8 +190,7 @@ class _FarmersScreenState extends State<FarmersScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(f.name,
                                         style: const TextStyle(
@@ -201,12 +202,6 @@ class _FarmersScreenState extends State<FarmersScreen> {
                                       '📍 ${f.location.isEmpty ? f.district : f.location} · ${f.variety}',
                                       style: const TextStyle(
                                           fontSize: 14, color: AppColors.sub),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'LastScan: ${f.lastScan} · ${f.scans} scans',
-                                      style: const TextStyle(
-                                          fontSize: 13, color: AppColors.sub),
                                     ),
                                   ],
                                 ),
@@ -277,10 +272,18 @@ class _FarmersScreenState extends State<FarmersScreen> {
                             label: 'District',
                             icon: '🗺️',
                             value: _form['district']!,
+                            enabled: false,
                             onChanged: (v) => _form['district'] = v,
                             options: const [
-                              'Anuradhapura', 'Polonnaruwa', 'Kurunegala', 'Kandy', 'Galle',
-                              'Hambantota', 'Matale', 'Jaffna', 'Batticaloa'
+                              'Anuradhapura',
+                              'Polonnaruwa',
+                              'Kurunegala',
+                              'Kandy',
+                              'Galle',
+                              'Hambantota',
+                              'Matale',
+                              'Jaffna',
+                              'Batticaloa'
                             ],
                           ),
                           InputField(
@@ -296,26 +299,38 @@ class _FarmersScreenState extends State<FarmersScreen> {
                             value: _form['variety']!,
                             onChanged: (v) => _form['variety'] = v,
                             options: const [
-                              'Suwandel', 'Nadu', 'Rathu Heenati', 'Bg 300', 'Bg 360',
-                              'At 307', 'Ld 365', 'Bg 250', 'Pachchaperumal'
+                              'Suwandel',
+                              'Nadu',
+                              'Rathu Heenati',
+                              'Bg 300',
+                              'Bg 360',
+                              'At 307',
+                              'Ld 365',
+                              'Bg 250',
+                              'Pachchaperumal'
                             ],
                           ),
                           if (_error.isNotEmpty)
                             Container(
                               margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 10),
                               decoration: BoxDecoration(
                                 color: AppColors.dangerPale,
-                                border: Border.all(color: AppColors.danger.withOpacity(0.27)),
+                                border: Border.all(
+                                    color: AppColors.danger.withOpacity(0.27)),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Row(
                                 children: [
-                                  const Text('⚠️ ', style: TextStyle(fontSize: 13)),
+                                  const Text('⚠️ ',
+                                      style: TextStyle(fontSize: 13)),
                                   Expanded(
                                     child: Text(
                                       _error,
-                                      style: const TextStyle(color: AppColors.danger, fontSize: 13),
+                                      style: const TextStyle(
+                                          color: AppColors.danger,
+                                          fontSize: 13),
                                     ),
                                   ),
                                 ],
@@ -341,7 +356,9 @@ class _FarmersScreenState extends State<FarmersScreen> {
   }
 
   Future<void> _handleStoreFarmer() async {
-    if (_form['name']!.isEmpty || _form['phone']!.isEmpty || _form['district']!.isEmpty) {
+    if (_form['name']!.isEmpty ||
+        _form['phone']!.isEmpty ||
+        _form['district']!.isEmpty) {
       setState(() => _error = 'Name, Phone and District are required.');
       return;
     }
@@ -352,19 +369,21 @@ class _FarmersScreenState extends State<FarmersScreen> {
     });
 
     try {
-      final response = await http.post(
-        Uri.parse('http://192.168.8.133:8002/api/farmers'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'supervisor_id': widget.supervisor.id,
-          'name': _form['name'],
-          'phone': _form['phone'],
-          'location': _form['location'],
-          'district': _form['district'],
-          'area': _form['area'],
-          'variety': _form['variety'],
-        }),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse('http://192.168.8.133:8002/api/farmers'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'supervisor_id': widget.supervisor.id,
+              'name': _form['name'],
+              'phone': _form['phone'],
+              'location': _form['location'],
+              'district': _form['district'],
+              'area': _form['area'],
+              'variety': _form['variety'],
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         if (mounted) {
@@ -374,13 +393,13 @@ class _FarmersScreenState extends State<FarmersScreen> {
               backgroundColor: AppColors.green,
             ),
           );
-          
+
           widget.onRefresh();
-          
+
           _form.forEach((key, value) {
             _form[key] = '';
           });
-          
+
           setState(() {
             _subPage = 'list';
           });
@@ -392,7 +411,8 @@ class _FarmersScreenState extends State<FarmersScreen> {
           setState(() => _error = data['message'] ?? 'Failed to save farmer.');
         } catch (_) {
           if (!mounted) return;
-          setState(() => _error = 'Server error (Status: ${response.statusCode})');
+          setState(
+              () => _error = 'Server error (Status: ${response.statusCode})');
         }
       }
     } catch (e) {
@@ -481,8 +501,8 @@ class _FarmersScreenState extends State<FarmersScreen> {
                           const SizedBox(height: 18),
                           Row(
                             children: [
-                               _buildInfoTile(
-                                  '📍 Location', f.location.isEmpty ? f.district : f.location),
+                              _buildInfoTile('📍 Location',
+                                  f.location.isEmpty ? f.district : f.location),
                               const SizedBox(width: 10),
                               _buildInfoTile('🌾 Variety', f.variety),
                               const SizedBox(width: 10),
@@ -667,7 +687,7 @@ class _FarmersScreenState extends State<FarmersScreen> {
 
   void _runRealAnalysis(XFile image) async {
     if (!mounted) return;
-    
+
     setState(() {
       _subPage = 'scanning';
       _scanStep = 0;
@@ -687,7 +707,7 @@ class _FarmersScreenState extends State<FarmersScreen> {
 
       // Step 2: Real Inference
       final result = await DiseaseService().predict(File(image.path));
-      
+
       // Step 3: Finalizing simulation
       if (!mounted) return;
       setState(() => _scanStep = 3);
@@ -696,7 +716,8 @@ class _FarmersScreenState extends State<FarmersScreen> {
       if (mounted) {
         setState(() {
           _scanResult = result;
-          _subPage = 'detail'; // Go back to detail to show result in bottom sheet
+          _subPage =
+              'detail'; // Go back to detail to show result in bottom sheet
         });
         _showDetailedResult(result, image.path);
       }
@@ -726,12 +747,18 @@ class _FarmersScreenState extends State<FarmersScreen> {
         height: MediaQuery.of(context).size.height * 0.9,
         decoration: const BoxDecoration(
           color: AppColors.bg,
-          borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
+          borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(32), topRight: Radius.circular(32)),
         ),
         child: Column(
           children: [
             const SizedBox(height: 12),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
+            Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2))),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
@@ -739,25 +766,34 @@ class _FarmersScreenState extends State<FarmersScreen> {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(20),
-                      child: Image.file(File(imagePath), height: 180, width: double.infinity, fit: BoxFit.cover),
+                      child: Image.file(File(imagePath),
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover),
                     ),
                     const SizedBox(height: 24),
                     Text(rec.icon, style: const TextStyle(fontSize: 64)),
                     const SizedBox(height: 12),
                     Text(
                       disease,
-                      style: const TextStyle(fontFamily: 'DM Serif Display', fontSize: 32, color: AppColors.forest),
+                      style: const TextStyle(
+                          fontFamily: 'DM Serif Display',
+                          fontSize: 32,
+                          color: AppColors.forest),
                     ),
                     Text(
                       '$conf% Confidence Score',
-                      style: const TextStyle(color: AppColors.sub, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                          color: AppColors.sub, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Probability Breakdown
                     const Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('AI Confidence Breakdown', style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 18)),
+                      child: Text('AI Confidence Breakdown',
+                          style: TextStyle(
+                              fontFamily: 'DM Serif Display', fontSize: 18)),
                     ),
                     const SizedBox(height: 16),
                     ...probs.entries.map((entry) {
@@ -770,15 +806,21 @@ class _FarmersScreenState extends State<FarmersScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(entry.key, style: TextStyle(
-                                  fontSize: 13, 
-                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                  color: isSelected ? AppColors.forest : AppColors.sub
-                                )),
-                                Text('${entry.value}%', style: TextStyle(
-                                  fontSize: 13, 
-                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500
-                                )),
+                                Text(entry.key,
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: isSelected
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                        color: isSelected
+                                            ? AppColors.forest
+                                            : AppColors.sub)),
+                                Text('${entry.value}%',
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: isSelected
+                                            ? FontWeight.w700
+                                            : FontWeight.w500)),
                               ],
                             ),
                             const SizedBox(height: 6),
@@ -786,8 +828,11 @@ class _FarmersScreenState extends State<FarmersScreen> {
                               borderRadius: BorderRadius.circular(10),
                               child: LinearProgressIndicator(
                                 value: entry.value / 100,
-                                backgroundColor: AppColors.border.withOpacity(0.3),
-                                color: isSelected ? AppColors.green : AppColors.sub.withOpacity(0.3),
+                                backgroundColor:
+                                    AppColors.border.withOpacity(0.3),
+                                color: isSelected
+                                    ? AppColors.green
+                                    : AppColors.sub.withOpacity(0.3),
                                 minHeight: 6,
                               ),
                             ),
@@ -799,26 +844,31 @@ class _FarmersScreenState extends State<FarmersScreen> {
                     const SizedBox(height: 32),
                     const Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('Treatment Recommendations', style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 18)),
+                      child: Text('Treatment Recommendations',
+                          style: TextStyle(
+                              fontFamily: 'DM Serif Display', fontSize: 18)),
                     ),
                     const SizedBox(height: 12),
                     ...rec.ferts.map((f) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: CardWidget(
-                        child: Row(
-                          children: [
-                            const Text('💊', style: TextStyle(fontSize: 18)),
-                            const SizedBox(width: 12),
-                            Expanded(child: Text(f, style: const TextStyle(fontSize: 14))),
-                          ],
-                        ),
-                      ),
-                    )),
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: CardWidget(
+                            child: Row(
+                              children: [
+                                const Text('💊',
+                                    style: TextStyle(fontSize: 18)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                    child: Text(f,
+                                        style: const TextStyle(fontSize: 14))),
+                              ],
+                            ),
+                          ),
+                        )),
                     const SizedBox(height: 32),
                     ButtonWidget(text: 'Download Report', onPressed: () {}),
                     const SizedBox(height: 12),
                     ButtonWidget(
-                      text: 'Close Result', 
+                      text: 'Close Result',
                       onPressed: () => Navigator.pop(context),
                       variant: 'outline',
                     ),
@@ -834,7 +884,12 @@ class _FarmersScreenState extends State<FarmersScreen> {
   }
 
   Widget _buildScanningOverlay() {
-    final steps = ['Uploading image...', 'Preprocessing leaf...', 'Running AI model...', 'Finalizing results...'];
+    final steps = [
+      'Uploading image...',
+      'Preprocessing leaf...',
+      'Running AI model...',
+      'Finalizing results...'
+    ];
     final progress = [20, 45, 80, 98];
 
     return Container(
@@ -864,20 +919,28 @@ class _FarmersScreenState extends State<FarmersScreen> {
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
-                          BoxShadow(color: AppColors.forest.withOpacity(0.3), blurRadius: 32, offset: const Offset(0, 8)),
+                          BoxShadow(
+                              color: AppColors.forest.withOpacity(0.3),
+                              blurRadius: 32,
+                              offset: const Offset(0, 8)),
                         ],
                       ),
-                      child: const Center(child: Text('🔬', style: TextStyle(fontSize: 38))),
+                      child: const Center(
+                          child: Text('🔬', style: TextStyle(fontSize: 38))),
                     ),
                   ],
                 ),
                 const SizedBox(height: 32),
                 const Text(
                   'Analyzing Leaf',
-                  style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 26, color: AppColors.forest),
+                  style: TextStyle(
+                      fontFamily: 'DM Serif Display',
+                      fontSize: 26,
+                      color: AppColors.forest),
                 ),
                 const SizedBox(height: 8),
-                Text(steps[_scanStep], style: const TextStyle(fontSize: 14, color: AppColors.sub)),
+                Text(steps[_scanStep],
+                    style: const TextStyle(fontSize: 14, color: AppColors.sub)),
                 const SizedBox(height: 28),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -887,7 +950,11 @@ class _FarmersScreenState extends State<FarmersScreen> {
                       width: i == _scanStep ? 24 : 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: i < _scanStep ? AppColors.green : i == _scanStep ? AppColors.accent : AppColors.border,
+                        color: i < _scanStep
+                            ? AppColors.green
+                            : i == _scanStep
+                                ? AppColors.accent
+                                : AppColors.border,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     );
@@ -897,20 +964,24 @@ class _FarmersScreenState extends State<FarmersScreen> {
                 Container(
                   width: 220,
                   height: 6,
-                  decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(4)),
                   child: FractionallySizedBox(
                     alignment: Alignment.centerLeft,
                     widthFactor: progress[_scanStep] / 100,
                     child: Container(
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [AppColors.green, AppColors.accent]),
+                        gradient: const LinearGradient(
+                            colors: [AppColors.green, AppColors.accent]),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text('${progress[_scanStep]}% complete', style: const TextStyle(fontSize: 13, color: AppColors.sub)),
+                Text('${progress[_scanStep]}% complete',
+                    style: const TextStyle(fontSize: 13, color: AppColors.sub)),
               ],
             ),
           ),
@@ -933,7 +1004,8 @@ class _FarmersScreenState extends State<FarmersScreen> {
               height: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.greenL.withOpacity(0.27), width: 2),
+                border: Border.all(
+                    color: AppColors.greenL.withOpacity(0.27), width: 2),
               ),
             ),
           ),

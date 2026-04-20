@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:rice_guard/screens/home_screen.dart';
 import 'dart:math';
 import 'dart:io';
 import '../theme/app_colors.dart';
@@ -7,13 +8,16 @@ import '../widgets/card_widget.dart';
 import '../widgets/top_bar.dart';
 import '../widgets/button_widget.dart';
 import '../models/farmer.dart';
+import '../models/supervisor.dart';
 import '../models/disease_rec.dart';
 import '../services/disease_service.dart';
 
 class ScanScreen extends StatefulWidget {
   final List<Farmer> farmers;
+  final Supervisor supervisor;
 
-  const ScanScreen({super.key, required this.farmers});
+  const ScanScreen(
+      {super.key, required this.farmers, required this.supervisor});
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
@@ -32,6 +36,7 @@ class _ScanScreenState extends State<ScanScreen> {
   Map<String, dynamic>? _scanResult;
   Map<String, dynamic>? _diseaseInfo;
   bool _fetchingInfo = false;
+  bool _isSaving = false;
   String _notes = '';
   bool _useDemo = true;
   double _spread1 = 58;
@@ -65,15 +70,45 @@ class _ScanScreenState extends State<ScanScreen> {
     super.dispose();
   }
 
+  void _handleBack() {
+    setState(() {
+      if (_stage == 'recommend' || _stage == 'compare') {
+        _stage = 'result';
+      } else if (_stage == 'result' || _stage == 'error' || _stage == 'scanning') {
+        _stage = 'pick';
+      } else if (_stage == 'pick') {
+        Navigator.pop(context);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_stage == 'pick') return _buildPickScreen();
-    if (_stage == 'scanning') return _buildScanningScreen();
-    if (_stage == 'result') return _buildResultScreen();
-    if (_stage == 'recommend') return _buildRecommendScreen();
-    if (_stage == 'compare') return _buildCompareScreen();
-    if (_stage == 'error') return _buildErrorScreen();
-    return const SizedBox();
+    Widget content;
+    if (_stage == 'pick') {
+      content = _buildPickScreen();
+    } else if (_stage == 'scanning') {
+      content = _buildScanningScreen();
+    } else if (_stage == 'result') {
+      content = _buildResultScreen();
+    } else if (_stage == 'recommend') {
+      content = _buildRecommendScreen();
+    } else if (_stage == 'compare') {
+      content = _buildCompareScreen();
+    } else if (_stage == 'error') {
+      content = _buildErrorScreen();
+    } else {
+      content = const SizedBox();
+    }
+
+    return PopScope(
+      canPop: _stage == 'pick',
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        _handleBack();
+      },
+      child: content,
+    );
   }
 
   Widget _buildPickScreen() {
@@ -81,7 +116,10 @@ class _ScanScreenState extends State<ScanScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            TopBar(title: 'Scan Leaf'),
+            TopBar(
+              title: 'Scan Leaf',
+              onBack: _handleBack,
+            ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(18, 18, 18, 100),
@@ -94,7 +132,8 @@ class _ScanScreenState extends State<ScanScreen> {
                         margin: const EdgeInsets.only(bottom: 18),
                         decoration: BoxDecoration(
                           color: AppColors.warnPale,
-                          border: Border.all(color: AppColors.warn.withOpacity(0.27)),
+                          border: Border.all(
+                              color: AppColors.warn.withOpacity(0.27)),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Row(
@@ -105,8 +144,14 @@ class _ScanScreenState extends State<ScanScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: const [
-                                  Text('Demo Mode Active', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.warn, fontSize: 13)),
-                                  Text('Predictions are simulated', style: TextStyle(fontSize: 12, color: AppColors.sub)),
+                                  Text('Demo Mode Active',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.warn,
+                                          fontSize: 13)),
+                                  Text('Predictions are simulated',
+                                      style: TextStyle(
+                                          fontSize: 12, color: AppColors.sub)),
                                 ],
                               ),
                             ),
@@ -118,16 +163,20 @@ class _ScanScreenState extends State<ScanScreen> {
                       style: TextStyle(fontSize: 13, color: AppColors.sub),
                     ),
                     const SizedBox(height: 18),
-                     GestureDetector(
+                    GestureDetector(
                       onTap: () => _showFarmerSelector(),
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: AppColors.white,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.border.withOpacity(0.5)),
+                          border: Border.all(
+                              color: AppColors.border.withOpacity(0.5)),
                           boxShadow: [
-                            BoxShadow(color: AppColors.forest.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+                            BoxShadow(
+                                color: AppColors.forest.withOpacity(0.03),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4)),
                           ],
                         ),
                         child: Row(
@@ -136,10 +185,15 @@ class _ScanScreenState extends State<ScanScreen> {
                               width: 44,
                               height: 44,
                               decoration: BoxDecoration(
-                                color: _selectedFarmer != null ? AppColors.greenPale : AppColors.bg,
+                                color: _selectedFarmer != null
+                                    ? AppColors.greenPale
+                                    : AppColors.bg,
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Center(child: Text(_selectedFarmer != null ? '👤' : '🔍', style: const TextStyle(fontSize: 20))),
+                              child: Center(
+                                  child: Text(
+                                      _selectedFarmer != null ? '👤' : '🔍',
+                                      style: const TextStyle(fontSize: 20))),
                             ),
                             const SizedBox(width: 14),
                             Expanded(
@@ -151,19 +205,23 @@ class _ScanScreenState extends State<ScanScreen> {
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 15,
-                                      color: _selectedFarmer != null ? AppColors.text : AppColors.sub,
+                                      color: _selectedFarmer != null
+                                          ? AppColors.text
+                                          : AppColors.sub,
                                     ),
                                   ),
                                   Text(
-                                    _selectedFarmer != null 
-                                      ? _selectedFarmer!.location
-                                      : 'Tap to search & associate scan',
-                                    style: const TextStyle(fontSize: 12, color: AppColors.sub),
+                                    _selectedFarmer != null
+                                        ? _selectedFarmer!.location
+                                        : 'Tap to search & associate scan',
+                                    style: const TextStyle(
+                                        fontSize: 12, color: AppColors.sub),
                                   ),
                                 ],
                               ),
                             ),
-                            const Icon(Icons.keyboard_arrow_down, color: AppColors.sub),
+                            const Icon(Icons.keyboard_arrow_down,
+                                color: AppColors.sub),
                           ],
                         ),
                       ),
@@ -185,7 +243,10 @@ class _ScanScreenState extends State<ScanScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 44),
                           decoration: BoxDecoration(
                             color: AppColors.greenPale,
-                            border: Border.all(color: AppColors.green, width: 2, style: BorderStyle.solid),
+                            border: Border.all(
+                                color: AppColors.green,
+                                width: 2,
+                                style: BorderStyle.solid),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Column(
@@ -194,10 +255,15 @@ class _ScanScreenState extends State<ScanScreen> {
                               const SizedBox(height: 12),
                               const Text(
                                 'Tap to capture / upload',
-                                style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.green, fontSize: 16),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.green,
+                                    fontSize: 16),
                               ),
                               const SizedBox(height: 6),
-                              const Text('JPG or PNG · Close-up of rice leaf', style: TextStyle(fontSize: 13, color: AppColors.sub)),
+                              const Text('JPG or PNG · Close-up of rice leaf',
+                                  style: TextStyle(
+                                      fontSize: 13, color: AppColors.sub)),
                               const SizedBox(height: 14),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -233,13 +299,23 @@ class _ScanScreenState extends State<ScanScreen> {
           padding: const EdgeInsets.all(24),
           decoration: const BoxDecoration(
             color: AppColors.bg,
-            borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
+            borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(32), topRight: Radius.circular(32)),
           ),
           child: Column(
             children: [
-              Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
+              Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2))),
               const SizedBox(height: 24),
-              const Text('Select Farmer', style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 24, color: AppColors.forest)),
+              const Text('Select Farmer',
+                  style: TextStyle(
+                      fontFamily: 'DM Serif Display',
+                      fontSize: 24,
+                      color: AppColors.forest)),
               const SizedBox(height: 18),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -254,15 +330,14 @@ class _ScanScreenState extends State<ScanScreen> {
                   decoration: InputDecoration(
                     hintText: 'Search by name or district...',
                     prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: _farmerSearchController.text.isNotEmpty 
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, size: 18), 
-                          onPressed: () {
-                            _farmerSearchController.clear();
-                            (context as Element).markNeedsBuild();
-                          }
-                        ) 
-                      : null,
+                    suffixIcon: _farmerSearchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () {
+                              _farmerSearchController.clear();
+                              (context as Element).markNeedsBuild();
+                            })
+                        : null,
                     border: InputBorder.none,
                   ),
                   onChanged: (v) {
@@ -272,75 +347,86 @@ class _ScanScreenState extends State<ScanScreen> {
               ),
               const SizedBox(height: 20),
               Expanded(
-                child: Builder(
-                  builder: (context) {
-                    final query = _farmerSearchController.text.toLowerCase();
-                    final filtered = widget.farmers.where((f) => 
-                      f.name.toLowerCase().contains(query) || 
-                      f.location.toLowerCase().contains(query)
-                    ).toList();
+                child: Builder(builder: (context) {
+                  final query = _farmerSearchController.text.toLowerCase();
+                  final filtered = widget.farmers
+                      .where((f) =>
+                          f.name.toLowerCase().contains(query) ||
+                          f.location.toLowerCase().contains(query))
+                      .toList();
 
-                    if (filtered.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text('🔍', style: TextStyle(fontSize: 40)),
-                            const SizedBox(height: 12),
-                            Text(
-                              widget.farmers.isEmpty ? 'No farmers found in database' : 'No matching farmers found', 
-                              style: const TextStyle(color: AppColors.sub)
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    return ListView.builder(
-                      itemCount: filtered.length,
-                      itemBuilder: (context, index) {
-                        final f = filtered[index];
-                        final isSel = _selectedFarmer?.id == f.id;
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: CardWidget(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            child: InkWell(
-                              onTap: () {
-                                setState(() => _selectedFarmer = f);
-                                Navigator.pop(context);
-                              },
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: isSel ? AppColors.greenPale : AppColors.bg,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Center(child: Text('👤')),
-                                  ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(f.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-                                        Text(f.location, style: const TextStyle(fontSize: 12, color: AppColors.sub)),
-                                      ],
-                                    ),
-                                  ),
-                                  if (isSel) const Icon(Icons.check_circle, color: AppColors.green),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+                  if (filtered.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('🔍', style: TextStyle(fontSize: 40)),
+                          const SizedBox(height: 12),
+                          Text(
+                              widget.farmers.isEmpty
+                                  ? 'No farmers found in database'
+                                  : 'No matching farmers found',
+                              style: const TextStyle(color: AppColors.sub)),
+                        ],
+                      ),
                     );
                   }
-                ),
+
+                  return ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final f = filtered[index];
+                      final isSel = _selectedFarmer?.id == f.id;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: CardWidget(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          child: InkWell(
+                            onTap: () {
+                              setState(() => _selectedFarmer = f);
+                              Navigator.pop(context);
+                            },
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: isSel
+                                        ? AppColors.greenPale
+                                        : AppColors.bg,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Center(child: Text('👤')),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(f.name,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w700)),
+                                      Text(f.location,
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              color: AppColors.sub)),
+                                    ],
+                                  ),
+                                ),
+                                if (isSel)
+                                  const Icon(Icons.check_circle,
+                                      color: AppColors.green),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }),
               ),
             ],
           ),
@@ -356,7 +442,8 @@ class _ScanScreenState extends State<ScanScreen> {
         color: AppColors.white,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(text, style: const TextStyle(fontSize: 12, color: AppColors.sub)),
+      child: Text(text,
+          style: const TextStyle(fontSize: 12, color: AppColors.sub)),
     );
   }
 
@@ -368,22 +455,34 @@ class _ScanScreenState extends State<ScanScreen> {
         padding: const EdgeInsets.all(24),
         decoration: const BoxDecoration(
           color: AppColors.white,
-          borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
+          borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(32), topRight: Radius.circular(32)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
+            Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 24),
-            const Text('Scan Leaf', style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 22, color: AppColors.forest)),
+            const Text('Scan Leaf',
+                style: TextStyle(
+                    fontFamily: 'DM Serif Display',
+                    fontSize: 22,
+                    color: AppColors.forest)),
             const SizedBox(height: 8),
-            const Text('Choose image source for analysis', style: TextStyle(color: AppColors.sub, fontSize: 13)),
+            const Text('Choose image source for analysis',
+                style: TextStyle(color: AppColors.sub, fontSize: 13)),
             const SizedBox(height: 32),
             Row(
               children: [
                 _buildPickerCard(context, 'Camera', '📸', ImageSource.camera),
                 const SizedBox(width: 16),
-                _buildPickerCard(context, 'Gallery', '🖼️', ImageSource.gallery),
+                _buildPickerCard(
+                    context, 'Gallery', '🖼️', ImageSource.gallery),
               ],
             ),
             const SizedBox(height: 32),
@@ -393,7 +492,8 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-  Widget _buildPickerCard(BuildContext context, String title, String icon, ImageSource source) {
+  Widget _buildPickerCard(
+      BuildContext context, String title, String icon, ImageSource source) {
     return Expanded(
       child: GestureDetector(
         onTap: () => _pickImage(source),
@@ -408,7 +508,11 @@ class _ScanScreenState extends State<ScanScreen> {
             children: [
               Text(icon, style: const TextStyle(fontSize: 34)),
               const SizedBox(height: 12),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.forest, fontSize: 15)),
+              Text(title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.forest,
+                      fontSize: 15)),
             ],
           ),
         ),
@@ -434,7 +538,8 @@ class _ScanScreenState extends State<ScanScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Could not open source. Note: Camera does not work on Simulators.'),
+            content: const Text(
+                'Could not open source. Note: Camera does not work on Simulators.'),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -444,16 +549,16 @@ class _ScanScreenState extends State<ScanScreen> {
 
   void _simulateScan() async {
     if (_imageFile == null) return;
-    
+
     // Step 0: uploading
     await Future.delayed(const Duration(milliseconds: 600));
     setState(() => _scanStep = 1);
-    
+
     try {
       setState(() => _scanStep = 2);
-      
+
       final result = await DiseaseService().predict(_imageFile!);
-      
+
       setState(() => _scanStep = 3);
       await Future.delayed(const Duration(milliseconds: 600));
 
@@ -470,22 +575,23 @@ class _ScanScreenState extends State<ScanScreen> {
 
   void _fetchRecommendation() async {
     if (_disease == null) return;
-    
+
     setState(() => _fetchingInfo = true);
-    
+
     final info = await DiseaseService().getDiseaseInfo(_disease!);
-    
+
     if (mounted) {
       setState(() {
         _diseaseInfo = info;
         _fetchingInfo = false;
         _stage = 'recommend';
       });
-      
+
       if (info == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Could not fetch latest info. Showing default results.'),
+            content:
+                Text('Could not fetch latest info. Showing default results.'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -493,8 +599,47 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
+  void _handleSaveReport() async {
+    if (_disease == null || _imageFile == null) return;
+
+    setState(() => _isSaving = true);
+
+    final success = await DiseaseService().saveDiseaseReport(
+      userId: widget.supervisor.id,
+      farmerId: _selectedFarmer?.id,
+      diseaseName: _disease!,
+      imageFile: _imageFile!,
+      note: _notes,
+    );
+
+    if (mounted) {
+      setState(() => _isSaving = false);
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Report saved successfully!'),
+            backgroundColor: AppColors.green,
+          ),
+        );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen(supervisor: widget.supervisor)));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to save report. Please try again.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildScanningScreen() {
-    final steps = ['Uploading image...', 'Preprocessing leaf...', 'Running AI model...', 'Finalizing results...'];
+    final steps = [
+      'Uploading image...',
+      'Preprocessing leaf...',
+      'Running AI model...',
+      'Finalizing results...'
+    ];
     final progress = [20, 45, 80, 98];
 
     return Scaffold(
@@ -521,20 +666,28 @@ class _ScanScreenState extends State<ScanScreen> {
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
-                          BoxShadow(color: AppColors.forest.withOpacity(0.3), blurRadius: 32, offset: const Offset(0, 8)),
+                          BoxShadow(
+                              color: AppColors.forest.withOpacity(0.3),
+                              blurRadius: 32,
+                              offset: const Offset(0, 8)),
                         ],
                       ),
-                      child: const Center(child: Text('🔬', style: TextStyle(fontSize: 38))),
+                      child: const Center(
+                          child: Text('🔬', style: TextStyle(fontSize: 38))),
                     ),
                   ],
                 ),
                 const SizedBox(height: 32),
                 const Text(
                   'Analyzing Leaf',
-                  style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 26, color: AppColors.forest),
+                  style: TextStyle(
+                      fontFamily: 'DM Serif Display',
+                      fontSize: 26,
+                      color: AppColors.forest),
                 ),
                 const SizedBox(height: 8),
-                Text(steps[_scanStep], style: const TextStyle(fontSize: 14, color: AppColors.sub)),
+                Text(steps[_scanStep],
+                    style: const TextStyle(fontSize: 14, color: AppColors.sub)),
                 const SizedBox(height: 28),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -544,7 +697,11 @@ class _ScanScreenState extends State<ScanScreen> {
                       width: i == _scanStep ? 24 : 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: i < _scanStep ? AppColors.green : i == _scanStep ? AppColors.accent : AppColors.border,
+                        color: i < _scanStep
+                            ? AppColors.green
+                            : i == _scanStep
+                                ? AppColors.accent
+                                : AppColors.border,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     );
@@ -554,23 +711,28 @@ class _ScanScreenState extends State<ScanScreen> {
                 Container(
                   width: 220,
                   height: 6,
-                  decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(4)),
                   child: FractionallySizedBox(
                     alignment: Alignment.centerLeft,
                     widthFactor: progress[_scanStep] / 100,
                     child: Container(
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [AppColors.green, AppColors.accent]),
+                        gradient: const LinearGradient(
+                            colors: [AppColors.green, AppColors.accent]),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text('${progress[_scanStep]}% complete', style: const TextStyle(fontSize: 13, color: AppColors.sub)),
+                Text('${progress[_scanStep]}% complete',
+                    style: const TextStyle(fontSize: 13, color: AppColors.sub)),
                 const SizedBox(height: 40),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(
                     color: AppColors.greenPale,
                     border: Border.all(color: AppColors.border),
@@ -590,7 +752,7 @@ class _ScanScreenState extends State<ScanScreen> {
                       const SizedBox(width: 10),
                       const Flexible(
                         child: Text(
-                          'Keras model · Rice disease classifier · 4 classes', 
+                          'Keras model · Rice disease classifier · 4 classes',
                           style: TextStyle(fontSize: 12, color: AppColors.sub),
                         ),
                       ),
@@ -619,7 +781,8 @@ class _ScanScreenState extends State<ScanScreen> {
               height: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.greenL.withOpacity(0.27), width: 2),
+                border: Border.all(
+                    color: AppColors.greenL.withOpacity(0.27), width: 2),
               ),
             ),
           ),
@@ -642,12 +805,7 @@ class _ScanScreenState extends State<ScanScreen> {
           children: [
             TopBar(
               title: 'Scan Result',
-              onBack: () => setState(() {
-                _stage = 'pick';
-                _scanResult = null;
-                _disease = null;
-                _previewImage = null;
-              }),
+              onBack: _handleBack,
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -679,10 +837,14 @@ class _ScanScreenState extends State<ScanScreen> {
                       padding: const EdgeInsets.all(22),
                       decoration: BoxDecoration(
                         color: resultBg,
-                        border: Border.all(color: resultColor.withOpacity(0.27), width: 1.0),
+                        border: Border.all(
+                            color: resultColor.withOpacity(0.27), width: 1.0),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
-                          BoxShadow(color: resultColor.withOpacity(0.08), blurRadius: 24, offset: const Offset(0, 8)),
+                          BoxShadow(
+                              color: resultColor.withOpacity(0.08),
+                              blurRadius: 24,
+                              offset: const Offset(0, 8)),
                         ],
                       ),
                       child: Column(
@@ -700,13 +862,15 @@ class _ScanScreenState extends State<ScanScreen> {
                           const SizedBox(height: 4),
                           Text(
                             isHealthy ? 'No disease found' : 'Disease Detected',
-                            style: const TextStyle(fontSize: 13, color: AppColors.sub),
+                            style: const TextStyle(
+                                fontSize: 13, color: AppColors.sub),
                           ),
                           if (conf != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 14),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 8),
                                 decoration: BoxDecoration(
                                   color: AppColors.white,
                                   borderRadius: BorderRadius.circular(12),
@@ -719,11 +883,18 @@ class _ScanScreenState extends State<ScanScreen> {
                                       height: 10,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: conf > 80 ? AppColors.greenL : conf > 60 ? AppColors.warn : AppColors.danger,
+                                        color: conf > 80
+                                            ? AppColors.greenL
+                                            : conf > 60
+                                                ? AppColors.warn
+                                                : AppColors.danger,
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    Text('$conf% confidence', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                                    Text('$conf% confidence',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 15)),
                                   ],
                                 ),
                               ),
@@ -739,66 +910,86 @@ class _ScanScreenState extends State<ScanScreen> {
                           children: [
                             const Text(
                               'Probability Breakdown',
-                              style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 16, color: AppColors.text),
+                              style: TextStyle(
+                                  fontFamily: 'DM Serif Display',
+                                  fontSize: 16,
+                                  color: AppColors.text),
                             ),
                             const SizedBox(height: 14),
-                            ...((_scanResult?['probabilities'] as Map<String, int>).entries.toList()
-                              ..sort((a, b) => b.value.compareTo(a.value)))
-                              .map((entry) {
-                                final lbl = entry.key;
-                                final pct = entry.value;
-                                final isTop = lbl == disease;
-                                final recItem = diseaseRecs[lbl] ?? diseaseRecs['Healthy']!;
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: Column(
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Text(recItem.icon, style: const TextStyle(fontSize: 14)),
-                                          const SizedBox(width: 6),
-                                          Expanded(
-                                            child: Text(
-                                              lbl,
-                                              style: TextStyle(
-                                                color: isTop ? resultColor : AppColors.text,
-                                                fontWeight: isTop ? FontWeight.w700 : FontWeight.w400,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ),
-                                          Text(
-                                            '$pct%',
+                            ...((_scanResult?['probabilities']
+                                        as Map<String, int>)
+                                    .entries
+                                    .toList()
+                                  ..sort((a, b) => b.value.compareTo(a.value)))
+                                .map((entry) {
+                              final lbl = entry.key;
+                              final pct = entry.value;
+                              final isTop = lbl == disease;
+                              final recItem =
+                                  diseaseRecs[lbl] ?? diseaseRecs['Healthy']!;
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(recItem.icon,
+                                            style:
+                                                const TextStyle(fontSize: 14)),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            lbl,
                                             style: TextStyle(
-                                              color: isTop ? resultColor : AppColors.sub,
-                                              fontWeight: FontWeight.w700,
+                                              color: isTop
+                                                  ? resultColor
+                                                  : AppColors.text,
+                                              fontWeight: isTop
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w400,
                                               fontSize: 13,
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Container(
-                                        height: 6,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.border,
-                                          borderRadius: BorderRadius.circular(4),
                                         ),
-                                        child: FractionallySizedBox(
-                                          alignment: Alignment.centerLeft,
-                                          widthFactor: pct / 100,
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              color: isTop ? (isHealthy ? AppColors.greenL : AppColors.danger) : AppColors.sub,
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
+                                        Text(
+                                          '$pct%',
+                                          style: TextStyle(
+                                            color: isTop
+                                                ? resultColor
+                                                : AppColors.sub,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.border,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: FractionallySizedBox(
+                                        alignment: Alignment.centerLeft,
+                                        widthFactor: pct / 100,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: isTop
+                                                ? (isHealthy
+                                                    ? AppColors.greenL
+                                                    : AppColors.danger)
+                                                : AppColors.sub,
+                                            borderRadius:
+                                                BorderRadius.circular(4),
                                           ),
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
                           ],
                         ),
                       ),
@@ -811,10 +1002,13 @@ class _ScanScreenState extends State<ScanScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(_selectedFarmer?.name ?? '', style: const TextStyle(fontWeight: FontWeight.w600)),
+                              Text(_selectedFarmer?.name ?? '',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600)),
                               Text(
                                 '📍 ${_selectedFarmer?.location ?? _selectedFarmer?.district ?? ''}',
-                                style: const TextStyle(fontSize: 12, color: AppColors.sub),
+                                style: const TextStyle(
+                                    fontSize: 12, color: AppColors.sub),
                               ),
                             ],
                           ),
@@ -830,12 +1024,12 @@ class _ScanScreenState extends State<ScanScreen> {
                         onPressed: _fetchRecommendation,
                       ),
                     const SizedBox(height: 10),
-                    ButtonWidget(
-                      variant: 'outline',
-                      icon: '📊',
-                      text: 'View Scan Comparison',
-                      onPressed: () => setState(() => _stage = 'compare'),
-                    ),
+                    // ButtonWidget(
+                    //   variant: 'outline',
+                    //   icon: '📊',
+                    //   text: 'View Scan Comparison',
+                    //   onPressed: () => setState(() => _stage = 'compare'),
+                    // ),
                     const SizedBox(height: 10),
                     ButtonWidget(
                       variant: 'ghost',
@@ -866,7 +1060,7 @@ class _ScanScreenState extends State<ScanScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            TopBar(title: 'Recommendations', onBack: () => setState(() => _stage = 'result')),
+            TopBar(title: 'Recommendations', onBack: _handleBack),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(18, 18, 18, 100),
@@ -887,8 +1081,14 @@ class _ScanScreenState extends State<ScanScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(disease, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: rec.color)),
-                              Text('for ${_selectedFarmer?.name ?? ''}', style: const TextStyle(fontSize: 12, color: AppColors.sub)),
+                              Text(disease,
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15,
+                                      color: rec.color)),
+                              Text('for ${_selectedFarmer?.name ?? ''}',
+                                  style: const TextStyle(
+                                      fontSize: 12, color: AppColors.sub)),
                             ],
                           ),
                         ],
@@ -897,7 +1097,10 @@ class _ScanScreenState extends State<ScanScreen> {
                     const SizedBox(height: 18),
                     const Text(
                       'Scanned Specimen',
-                      style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 18, color: AppColors.text),
+                      style: TextStyle(
+                          fontFamily: 'DM Serif Display',
+                          fontSize: 18,
+                          color: AppColors.text),
                     ),
                     const SizedBox(height: 12),
                     if (_imageFile != null)
@@ -916,29 +1119,40 @@ class _ScanScreenState extends State<ScanScreen> {
                     const SizedBox(height: 24),
                     const Text(
                       'About Disease',
-                      style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 18, color: AppColors.text),
+                      style: TextStyle(
+                          fontFamily: 'DM Serif Display',
+                          fontSize: 18,
+                          color: AppColors.text),
                     ),
                     const SizedBox(height: 12),
                     CardWidget(
                       child: Text(
                         _diseaseInfo?['note'] ?? rec.note,
-                        style: const TextStyle(fontSize: 14, color: AppColors.sub, height: 1.5),
+                        style: const TextStyle(
+                            fontSize: 14, color: AppColors.sub, height: 1.5),
                       ),
                     ),
                     const SizedBox(height: 24),
                     const Text(
                       'Solutions & Treatments',
-                      style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 18, color: AppColors.text),
+                      style: TextStyle(
+                          fontFamily: 'DM Serif Display',
+                          fontSize: 18,
+                          color: AppColors.text),
                     ),
                     const SizedBox(height: 12),
                     CardWidget(
                       child: Column(
-                        children: ((_diseaseInfo?['solutions'] as String?)?.split('\n') ?? rec.ferts).map((f) {
+                        children: ((_diseaseInfo?['solutions'] as String?)
+                                    ?.split('\n') ??
+                                rec.ferts)
+                            .map((f) {
                           if (f.trim().isEmpty) return const SizedBox.shrink();
                           return Container(
                             padding: const EdgeInsets.symmetric(vertical: 11),
                             decoration: BoxDecoration(
-                              border: Border(bottom: BorderSide(color: AppColors.border)),
+                              border: Border(
+                                  bottom: BorderSide(color: AppColors.border)),
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -953,18 +1167,23 @@ class _ScanScreenState extends State<ScanScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                Expanded(child: Text(f.replaceAll('•', '').trim(), style: const TextStyle(fontSize: 14))),
+                                Expanded(
+                                    child: Text(f.replaceAll('•', '').trim(),
+                                        style: const TextStyle(fontSize: 14))),
                               ],
                             ),
                           );
                         }).toList(),
                       ),
                     ),
-                    
                     const SizedBox(height: 18),
                     const Text(
                       'Custom Notes',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.5, color: AppColors.sub),
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                          color: AppColors.sub),
                     ),
                     const SizedBox(height: 6),
                     TextField(
@@ -974,20 +1193,23 @@ class _ScanScreenState extends State<ScanScreen> {
                         hintText: 'Add your observations...',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+                          borderSide: const BorderSide(
+                              color: AppColors.border, width: 1.5),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+                          borderSide: const BorderSide(
+                              color: AppColors.border, width: 1.5),
                         ),
                         contentPadding: const EdgeInsets.all(14),
                       ),
                     ),
                     const SizedBox(height: 16),
                     ButtonWidget(
+                      loading: _isSaving,
                       icon: '✓',
                       text: 'Save Scans',
-                      onPressed: () => setState(() => _stage = 'compare'),
+                      onPressed: _handleSaveReport,
                     ),
                   ],
                 ),
@@ -1006,7 +1228,7 @@ class _ScanScreenState extends State<ScanScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            TopBar(title: 'Scan Comparison', onBack: () => setState(() => _stage = 'result')),
+            TopBar(title: 'Scan Comparison', onBack: _handleBack),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(18, 18, 18, 100),
@@ -1014,29 +1236,37 @@ class _ScanScreenState extends State<ScanScreen> {
                   children: [
                     Text(
                       '${_selectedFarmer?.name ?? ''} · ${_disease ?? 'Disease'}',
-                      style: const TextStyle(fontSize: 13, color: AppColors.sub),
+                      style:
+                          const TextStyle(fontSize: 13, color: AppColors.sub),
                     ),
                     const SizedBox(height: 18),
                     Row(
                       children: [
-                        _buildComparisonCard('Scan 1', '2 weeks ago', _spread1, AppColors.danger),
+                        _buildComparisonCard('Scan 1', '2 weeks ago', _spread1,
+                            AppColors.danger),
                         const SizedBox(width: 12),
-                        _buildComparisonCard('Scan 2', 'Today', _spread2, AppColors.greenL),
+                        _buildComparisonCard(
+                            'Scan 2', 'Today', _spread2, AppColors.greenL),
                       ],
                     ),
                     const SizedBox(height: 18),
                     CardWidget(
-                      backgroundColor: reduction > 0 ? AppColors.greenPale : AppColors.dangerPale,
+                      backgroundColor: reduction > 0
+                          ? AppColors.greenPale
+                          : AppColors.dangerPale,
                       child: Column(
                         children: [
-                          Text(reduction > 0 ? '📉' : '📈', style: const TextStyle(fontSize: 44)),
+                          Text(reduction > 0 ? '📉' : '📈',
+                              style: const TextStyle(fontSize: 44)),
                           const SizedBox(height: 8),
                           Text(
                             '${reduction.abs()}% ${reduction > 0 ? 'Reduction' : 'Increase'}',
                             style: TextStyle(
                               fontFamily: 'DM Serif Display',
                               fontSize: 24,
-                              color: reduction > 0 ? AppColors.green : AppColors.danger,
+                              color: reduction > 0
+                                  ? AppColors.green
+                                  : AppColors.danger,
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -1044,7 +1274,8 @@ class _ScanScreenState extends State<ScanScreen> {
                             reduction > 0
                                 ? 'Treatment is working. Continue current plan.'
                                 : 'Disease spreading! Immediate action needed!',
-                            style: const TextStyle(fontSize: 13, color: AppColors.sub),
+                            style: const TextStyle(
+                                fontSize: 13, color: AppColors.sub),
                           ),
                         ],
                       ),
@@ -1072,19 +1303,28 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-  Widget _buildComparisonCard(String label, String sub, double spread, Color color) {
+  Widget _buildComparisonCard(
+      String label, String sub, double spread, Color color) {
     return Expanded(
       child: CardWidget(
         child: Column(
           children: [
-            Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.sub)),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.sub)),
             const SizedBox(height: 2),
-            Text(sub, style: const TextStyle(fontSize: 10, color: AppColors.sub)),
+            Text(sub,
+                style: const TextStyle(fontSize: 10, color: AppColors.sub)),
             const SizedBox(height: 12),
             _buildDonutChart(spread.toInt(), color, 100),
             const SizedBox(height: 10),
-            Text('${spread.toInt()}%', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 22, color: color)),
-            const Text('spread', style: TextStyle(fontSize: 11, color: AppColors.sub)),
+            Text('${spread.toInt()}%',
+                style: TextStyle(
+                    fontWeight: FontWeight.w700, fontSize: 22, color: color)),
+            const Text('spread',
+                style: TextStyle(fontSize: 11, color: AppColors.sub)),
           ],
         ),
       ),
@@ -1108,9 +1348,11 @@ class _ScanScreenState extends State<ScanScreen> {
 
     String path;
     if (pct >= 99) {
-      path = 'M $r ${r - r} A $r $r 0 1 1 ${r - 0.01} ${r - r} L ${r - 0.01} ${r - ir} A $ir $ir 0 1 0 $r ${r - ir} Z';
+      path =
+          'M $r ${r - r} A $r $r 0 1 1 ${r - 0.01} ${r - r} L ${r - 0.01} ${r - ir} A $ir $ir 0 1 0 $r ${r - ir} Z';
     } else {
-      path = 'M $ix1 $iy1 L $x1 $y1 A $r $r 0 $la 1 $x2 $y2 L $ix2 $iy2 A $ir $ir 0 $la 0 $ix1 $iy1 Z';
+      path =
+          'M $ix1 $iy1 L $x1 $y1 A $r $r 0 $la 1 $x2 $y2 L $ix2 $iy2 A $ir $ir 0 $la 0 $ix1 $iy1 Z';
     }
 
     return SizedBox(
@@ -1127,9 +1369,7 @@ class _ScanScreenState extends State<ScanScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            TopBar(title: 'Scan Failed', onBack: () => setState(() {
-              _stage = 'pick';
-            })),
+            TopBar(title: 'Scan Failed', onBack: _handleBack),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -1140,22 +1380,30 @@ class _ScanScreenState extends State<ScanScreen> {
                     const SizedBox(height: 20),
                     const Text(
                       'Model API Error',
-                      style: TextStyle(fontFamily: 'DM Serif Display', fontSize: 22, color: AppColors.danger),
+                      style: TextStyle(
+                          fontFamily: 'DM Serif Display',
+                          fontSize: 22,
+                          color: AppColors.danger),
                     ),
                     const SizedBox(height: 24),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: AppColors.dangerPale,
-                        border: Border.all(color: AppColors.danger.withOpacity(0.2)),
+                        border: Border.all(
+                            color: AppColors.danger.withOpacity(0.2)),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Error Details', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.danger)),
+                          const Text('Error Details',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.danger)),
                           const SizedBox(height: 6),
-                          const Text('Could not reach model API', style: TextStyle(fontSize: 13)),
+                          const Text('Could not reach model API',
+                              style: TextStyle(fontSize: 13)),
                         ],
                       ),
                     ),
@@ -1223,7 +1471,8 @@ class _DonutPainter extends CustomPainter {
         final sf = double.parse(parts[i + 5]) == 1;
         final x = double.parse(parts[i + 6]);
         final y = double.parse(parts[i + 7]);
-        pathObj.arcToPoint(Offset(x, y), radius: Radius.circular(rx), largeArc: laf, clockwise: sf);
+        pathObj.arcToPoint(Offset(x, y),
+            radius: Radius.circular(rx), largeArc: laf, clockwise: sf);
         i += 8;
       } else if (cmd == 'Z') {
         pathObj.close();

@@ -13,6 +13,7 @@ import '../models/farmer.dart';
 import '../models/alert.dart';
 import '../models/disease_rec.dart';
 import '../services/disease_service.dart';
+import '../models/disease_report.dart';
 
 final List<Alert> initialAlerts = [
   Alert(id: 1, farmer: "Kamal Perera", disease: "Blast", severity: "High", time: "2h ago", read: false),
@@ -35,12 +36,15 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Farmer> _farmers = [];
   bool _isLoadingFarmers = true;
   String _farmersError = '';
+  int _scanCount = 0;
+  bool _isLoadingReports = true;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _selectedIndex);
     _fetchFarmers();
+    _fetchReportsCount();
     // Pre-initialize AI model for faster first scan
     DiseaseService().initModel();
   }
@@ -71,7 +75,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
         if (!mounted) return;
         setState(() {
-          _farmers = data.map((f) => Farmer.fromJson(f)).toList();
+          _farmers = data.map((f) => Farmer.fromJson(f))
+              .where((f) => f.district.toLowerCase() == widget.supervisor.district.toLowerCase())
+              .toList();
           _isLoadingFarmers = false;
         });
       } else {
@@ -90,6 +96,32 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _farmersError = msg;
         _isLoadingFarmers = false;
+      });
+    }
+  }
+  
+  Future<void> _fetchReportsCount() async {
+    if (!mounted) return;
+    setState(() => _isLoadingReports = true);
+    
+    try {
+      // Use a slightly longer timeout locally than the service, or just trust the service
+      // But we'll add a safety catch to ensure _isLoadingReports is ALWAYS false eventually.
+      final List<DiseaseReport> reports = await DiseaseService()
+          .getSupervisorReports(widget.supervisor.id)
+          .timeout(const Duration(seconds: 12), onTimeout: () => []);
+          
+      if (!mounted) return;
+      setState(() {
+        _scanCount = reports.length;
+        _isLoadingReports = false;
+      });
+    } catch (e) {
+      debugPrint('HomeScreen stats fetch error: $e');
+      if (!mounted) return;
+      setState(() {
+        _isLoadingReports = false;
+        // Optionally keep _scanCount at previous value or 0
       });
     }
   }
@@ -117,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           _buildHomeContent(name, unreadCount),
           FarmersScreen(farmers: _farmers, supervisor: widget.supervisor, onRefresh: _fetchFarmers),
-          ScanScreen(farmers: _farmers),
+          ScanScreen(farmers: _farmers, supervisor: widget.supervisor),
           AlertsScreen(supervisor: widget.supervisor),
           MoreScreen(farmers: _farmers, supervisor: widget.supervisor),
         ],
@@ -246,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               _buildStatCard('👤', _isLoadingFarmers ? '...' : _farmers.length.toString(), 'Farmers'),
               const SizedBox(width: 12),
-              _buildStatCard('🔬', '7', 'Scans'),
+              _buildStatCard('🔬', _isLoadingReports ? '...' : _scanCount.toString(), 'Scans'),
               const SizedBox(width: 12),
               _buildStatCard('⚠️', '3', 'Alerts', color: AppColors.accent),
             ],

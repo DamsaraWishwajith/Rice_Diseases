@@ -9,6 +9,7 @@ class InputField extends StatelessWidget {
   final String? placeholder;
   final String? type; // text, email, password, tel
   final List<String>? options; // for dropdown
+  final bool enabled;
 
   const InputField({
     super.key,
@@ -19,6 +20,7 @@ class InputField extends StatelessWidget {
     this.placeholder,
     this.type,
     this.options,
+    this.enabled = true,
   });
 
   @override
@@ -57,12 +59,13 @@ class InputField extends StatelessWidget {
                     items: options!.map((opt) {
                       return DropdownMenuItem(value: opt, child: Text(opt));
                     }).toList(),
-                    onChanged: (val) => onChanged(val ?? ''),
+                    onChanged: enabled ? (val) => onChanged(val ?? '') : null,
                     style: const TextStyle(fontSize: 14, color: AppColors.text),
                   )
                 : TextFormField(
                     initialValue: value,
                     onChanged: onChanged,
+                    enabled: enabled,
                     obscureText: type == 'password',
                     style: const TextStyle(fontSize: 14, color: AppColors.text),
                     decoration: InputDecoration(
