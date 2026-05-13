@@ -16,9 +16,27 @@ import '../services/disease_service.dart';
 import '../models/disease_report.dart';
 
 final List<Alert> initialAlerts = [
-  Alert(id: 1, farmer: "Kamal Perera", disease: "Blast", severity: "High", time: "2h ago", read: false),
-  Alert(id: 2, farmer: "Nimal Silva", disease: "Sheath Blight", severity: "Medium", time: "1d ago", read: false),
-  Alert(id: 3, farmer: "Sunil Fernando", disease: "Brown Spot", severity: "Low", time: "3d ago", read: true),
+  Alert(
+      id: 1,
+      farmer: "Kamal Perera",
+      disease: "Blast",
+      severity: "High",
+      time: "2h ago",
+      read: false),
+  Alert(
+      id: 2,
+      farmer: "Nimal Silva",
+      disease: "Sheath Blight",
+      severity: "Medium",
+      time: "1d ago",
+      read: false),
+  Alert(
+      id: 3,
+      farmer: "Sunil Fernando",
+      disease: "Brown Spot",
+      severity: "Low",
+      time: "3d ago",
+      read: true),
 ];
 
 class HomeScreen extends StatefulWidget {
@@ -56,9 +74,11 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      final response = await http.get(
-        Uri.parse('http://192.168.8.133:8002/api/farmers'),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(
+            Uri.parse('https://rice-diseases.gt.tc/api/farmers'),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final dynamic decoded = jsonDecode(response.body);
@@ -75,15 +95,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
         if (!mounted) return;
         setState(() {
-          _farmers = data.map((f) => Farmer.fromJson(f))
-              .where((f) => f.district.toLowerCase() == widget.supervisor.district.toLowerCase())
+          _farmers = data
+              .map((f) => Farmer.fromJson(f))
+              .where((f) =>
+                  f.district.toLowerCase() ==
+                  widget.supervisor.district.toLowerCase())
               .toList();
           _isLoadingFarmers = false;
         });
       } else {
         if (!mounted) return;
         setState(() {
-          _farmersError = 'Failed to load farmers (Status: ${response.statusCode})';
+          _farmersError =
+              'Failed to load farmers (Status: ${response.statusCode})';
           _isLoadingFarmers = false;
         });
       }
@@ -99,18 +123,18 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
   }
-  
+
   Future<void> _fetchReportsCount() async {
     if (!mounted) return;
     setState(() => _isLoadingReports = true);
-    
+
     try {
       // Use a slightly longer timeout locally than the service, or just trust the service
       // But we'll add a safety catch to ensure _isLoadingReports is ALWAYS false eventually.
       final List<DiseaseReport> reports = await DiseaseService()
           .getSupervisorReports(widget.supervisor.id)
           .timeout(const Duration(seconds: 12), onTimeout: () => []);
-          
+
       if (!mounted) return;
       setState(() {
         _scanCount = reports.length;
@@ -135,20 +159,28 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final unreadCount = initialAlerts.where((a) => !a.read).length;
-    final name = widget.supervisor.username.replaceAll('_', ' ').split(' ').map((e) =>
-        e.isNotEmpty ? e[0].toUpperCase() + e.substring(1).toLowerCase() : e).join(' ');
+    final name = widget.supervisor.username
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map((e) => e.isNotEmpty
+            ? e[0].toUpperCase() + e.substring(1).toLowerCase()
+            : e)
+        .join(' ');
 
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
-          setState(() => _selectedIndex = index); 
+          setState(() => _selectedIndex = index);
         },
         physics: const NeverScrollableScrollPhysics(),
         children: [
           _buildHomeContent(name, unreadCount),
-          FarmersScreen(farmers: _farmers, supervisor: widget.supervisor, onRefresh: _fetchFarmers),
+          FarmersScreen(
+              farmers: _farmers,
+              supervisor: widget.supervisor,
+              onRefresh: _fetchFarmers),
           ScanScreen(farmers: _farmers, supervisor: widget.supervisor),
           AlertsScreen(supervisor: widget.supervisor),
           MoreScreen(farmers: _farmers, supervisor: widget.supervisor),
@@ -222,7 +254,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     const Text(
                       'Good morning 👋',
-                      style: TextStyle(color: Colors.white70, fontSize: 16, letterSpacing: 0.3),
+                      style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                          letterSpacing: 0.3),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -236,7 +271,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 4),
                     Text(
                       '📍  ${widget.supervisor.district} District',
-                      style: const TextStyle(color: Colors.white60, fontSize: 16, letterSpacing: 0.2),
+                      style: const TextStyle(
+                          color: Colors.white60,
+                          fontSize: 16,
+                          letterSpacing: 0.2),
                     ),
                   ],
                 ),
@@ -252,7 +290,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Stack(
                     children: [
-                      const Center(child: Text('🔔', style: TextStyle(fontSize: 22))),
+                      const Center(
+                          child: Text('🔔', style: TextStyle(fontSize: 22))),
                       if (unreadCount > 0)
                         Positioned(
                           top: 8,
@@ -263,7 +302,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             decoration: BoxDecoration(
                               color: AppColors.accent,
                               shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.forest, width: 2),
+                              border:
+                                  Border.all(color: AppColors.forest, width: 2),
                             ),
                           ),
                         ),
@@ -276,9 +316,13 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 25),
           Row(
             children: [
-              _buildStatCard('👤', _isLoadingFarmers ? '...' : _farmers.length.toString(), 'Farmers'),
+              _buildStatCard(
+                  '👤',
+                  _isLoadingFarmers ? '...' : _farmers.length.toString(),
+                  'Farmers'),
               const SizedBox(width: 12),
-              _buildStatCard('🔬', _isLoadingReports ? '...' : _scanCount.toString(), 'Scans'),
+              _buildStatCard('🔬',
+                  _isLoadingReports ? '...' : _scanCount.toString(), 'Scans'),
               const SizedBox(width: 12),
               _buildStatCard('⚠️', '3', 'Alerts', color: AppColors.accent),
             ],
@@ -288,7 +332,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildStatCard(String icon, String value, String label, {Color? color}) {
+  Widget _buildStatCard(String icon, String value, String label,
+      {Color? color}) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -323,64 +368,65 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
   Widget _buildQuickScanCard() {
     return GestureDetector(
       onTap: () => _pageController.jumpToPage(2),
       child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.accent, const Color(0xFFF5C040)],
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.accent.withOpacity(0.35),
-                blurRadius: 32,
-                offset: const Offset(0, 8),
-              ),
-            ],
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.accent, const Color(0xFFF5C040)],
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'QUICK ACTION',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
-                      ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.accent.withOpacity(0.35),
+              blurRadius: 32,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'QUICK ACTION',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Scan Rice Leaf',
-                      style: TextStyle(
-                        fontFamily: 'DM Serif Display',
-                        color: Colors.white,
-                        fontSize: 24,
-                      ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Scan Rice Leaf',
+                    style: TextStyle(
+                      fontFamily: 'DM Serif Display',
+                      color: Colors.white,
+                      fontSize: 24,
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Detect disease instantly →',
-                      style: TextStyle(color: Colors.white70, fontSize: 16),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Detect disease instantly →',
+                    style: TextStyle(color: Colors.white70, fontSize: 16),
+                  ),
+                ],
               ),
-              Container(
-                padding: const EdgeInsets.only(left: 12),
-                child: const Text('🌿', style: TextStyle(fontSize: 64)),
-              ),
-            ],
+            ),
+            Container(
+              padding: const EdgeInsets.only(left: 12),
+              child: const Text('🌿', style: TextStyle(fontSize: 64)),
+            ),
+          ],
         ),
       ),
     );
@@ -390,29 +436,32 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Recent Alerts',
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Recent Alerts',
+              style: TextStyle(
+                fontFamily: 'DM Serif Display',
+                fontSize: 22,
+                color: AppColors.text,
+              ),
+            ),
+            GestureDetector(
+              onTap: () => _pageController.jumpToPage(3),
+              child: const Text(
+                'See all',
                 style: TextStyle(
-                  fontFamily: 'DM Serif Display',
-                  fontSize: 22,
-                  color: AppColors.text,
-                ),
+                    color: AppColors.green,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600),
               ),
-              GestureDetector(
-                onTap: () => _pageController.jumpToPage(3),
-                child: const Text(
-                  'See all',
-                  style: TextStyle(color: AppColors.green, fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...initialAlerts.take(2).map((alert) => _buildAlertCard(alert)),
-        ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ...initialAlerts.take(2).map((alert) => _buildAlertCard(alert)),
+      ],
     );
   }
 
@@ -435,7 +484,8 @@ class _HomeScreenState extends State<HomeScreen> {
               color: severityColor.withOpacity(0.09),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Center(child: Text(rec.icon, style: const TextStyle(fontSize: 20))),
+            child: Center(
+                child: Text(rec.icon, style: const TextStyle(fontSize: 20))),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -444,7 +494,10 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   '${alert.disease} detected',
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: AppColors.text),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: AppColors.text),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -481,26 +534,34 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => _pageController.jumpToPage(1),
                 child: const Text(
                   'See all',
-                  style: TextStyle(color: AppColors.green, fontSize: 13, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                      color: AppColors.green,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           if (_isLoadingFarmers)
-            const Center(child: Padding(
+            const Center(
+                child: Padding(
               padding: EdgeInsets.all(20.0),
               child: CircularProgressIndicator(),
             ))
           else if (_farmersError.isNotEmpty)
-            Center(child: Padding(
+            Center(
+                child: Padding(
               padding: const EdgeInsets.all(20.0),
-              child: Text(_farmersError, style: const TextStyle(color: AppColors.danger)),
+              child: Text(_farmersError,
+                  style: const TextStyle(color: AppColors.danger)),
             ))
           else if (_farmers.isEmpty)
-            const Center(child: Padding(
+            const Center(
+                child: Padding(
               padding: EdgeInsets.all(20.0),
-              child: Text('No farmers added yet.', style: TextStyle(color: AppColors.sub)),
+              child: Text('No farmers added yet.',
+                  style: TextStyle(color: AppColors.sub)),
             ))
           else
             SizedBox(
@@ -511,14 +572,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 separatorBuilder: (_, __) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
                   final farmer = _farmers[index];
-                  final rec = diseaseRecs[farmer.disease] ?? diseaseRecs['Healthy']!;
+                  final rec =
+                      diseaseRecs[farmer.disease] ?? diseaseRecs['Healthy']!;
                   return Container(
                     width: 128,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: AppColors.white,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.border.withOpacity(0.6), width: 0.8),
+                      border: Border.all(
+                          color: AppColors.border.withOpacity(0.6), width: 0.8),
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.forest.withOpacity(0.04),
@@ -537,19 +600,25 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: AppColors.greenPale,
                             borderRadius: BorderRadius.circular(11),
                           ),
-                          child: const Center(child: Text('👤', style: TextStyle(fontSize: 16))),
+                          child: const Center(
+                              child:
+                                  Text('👤', style: TextStyle(fontSize: 16))),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           farmer.name.split(' ').first,
-                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppColors.text),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                              color: AppColors.text),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                         ),
                         const SizedBox(height: 2),
                         Text(
                           farmer.variety,
-                          style: const TextStyle(fontSize: 13, color: AppColors.sub),
+                          style: const TextStyle(
+                              fontSize: 13, color: AppColors.sub),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                         ),
@@ -578,7 +647,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
-        border: Border(top: BorderSide(color: AppColors.border.withOpacity(0.5), width: 1)),
+        border: Border(
+            top:
+                BorderSide(color: AppColors.border.withOpacity(0.5), width: 1)),
         boxShadow: [
           BoxShadow(
             color: AppColors.forest.withOpacity(0.06),
@@ -620,13 +691,16 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ],
                           ),
-                          child: const Center(child: Text('🔬', style: TextStyle(fontSize: 22))),
+                          child: const Center(
+                              child:
+                                  Text('🔬', style: TextStyle(fontSize: 22))),
                         ),
                       )
                     else
                       Opacity(
                         opacity: isSelected ? 1.0 : 0.38,
-                        child: Text(tab['icon'] as String, style: const TextStyle(fontSize: 21)),
+                        child: Text(tab['icon'] as String,
+                            style: const TextStyle(fontSize: 21)),
                       ),
                     if (!isBig) ...[
                       const SizedBox(height: 3),
@@ -634,7 +708,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         tab['label'] as String,
                         style: TextStyle(
                           fontSize: 10,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w400,
                           color: isSelected ? AppColors.green : AppColors.sub,
                         ),
                       ),

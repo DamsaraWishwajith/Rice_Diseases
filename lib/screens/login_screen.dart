@@ -79,7 +79,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 28, vertical: 36),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -89,10 +90,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.white.withOpacity(0.22), width: 1.5),
+                                  border: Border.all(
+                                      color: Colors.white.withOpacity(0.22),
+                                      width: 1.5),
                                 ),
                                 child: const Center(
-                                  child: Text('🌾', style: TextStyle(fontSize: 32)),
+                                  child: Text('🌾',
+                                      style: TextStyle(fontSize: 32)),
                                 ),
                               ),
                               const SizedBox(height: 18),
@@ -117,7 +121,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 32),
                           decoration: BoxDecoration(
                             color: AppColors.white,
                             borderRadius: const BorderRadius.only(
@@ -125,7 +130,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               topRight: Radius.circular(32),
                             ),
                             boxShadow: [
-                              BoxShadow(color: AppColors.forest.withOpacity(0.15), blurRadius: 40, offset: const Offset(0, -10)),
+                              BoxShadow(
+                                  color: AppColors.forest.withOpacity(0.15),
+                                  blurRadius: 40,
+                                  offset: const Offset(0, -10)),
                             ],
                           ),
                           child: Column(
@@ -160,19 +168,25 @@ class _LoginScreenState extends State<LoginScreen> {
                               if (_error.isNotEmpty)
                                 Container(
                                   margin: const EdgeInsets.only(bottom: 12),
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 10),
                                   decoration: BoxDecoration(
                                     color: AppColors.dangerPale,
-                                    border: Border.all(color: AppColors.danger.withOpacity(0.27)),
+                                    border: Border.all(
+                                        color:
+                                            AppColors.danger.withOpacity(0.27)),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Row(
                                     children: [
-                                      const Text('⚠️ ', style: TextStyle(fontSize: 13)),
+                                      const Text('⚠️ ',
+                                          style: TextStyle(fontSize: 13)),
                                       Expanded(
                                         child: Text(
                                           _error,
-                                          style: const TextStyle(color: AppColors.danger, fontSize: 13),
+                                          style: const TextStyle(
+                                              color: AppColors.danger,
+                                              fontSize: 13),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -182,7 +196,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               const SizedBox(height: 8),
                               ButtonWidget(
-                                text: _isLoading ? 'Please wait...' : 'Sign In →',
+                                text:
+                                    _isLoading ? 'Please wait...' : 'Sign In →',
                                 onPressed: _isLoading ? () {} : _handleLogin,
                               ),
                               const SizedBox(height: 16),
@@ -191,11 +206,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 children: [
                                   const Text(
                                     "Don't have an account?",
-                                    style: TextStyle(color: AppColors.sub, fontSize: 13),
+                                    style: TextStyle(
+                                        color: AppColors.sub, fontSize: 13),
                                   ),
                                   const SizedBox(width: 6),
                                   GestureDetector(
-                                    onTap: () => setState(() => _showCreate = true),
+                                    onTap: () =>
+                                        setState(() => _showCreate = true),
                                     child: const Text(
                                       'Create Account',
                                       style: TextStyle(
@@ -257,7 +274,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 28, vertical: 36),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -267,10 +285,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.white.withOpacity(0.22), width: 1.5),
+                                  border: Border.all(
+                                      color: Colors.white.withOpacity(0.22),
+                                      width: 1.5),
                                 ),
                                 child: const Center(
-                                  child: Text('🌾', style: TextStyle(fontSize: 32)),
+                                  child: Text('🌾',
+                                      style: TextStyle(fontSize: 32)),
                                 ),
                               ),
                               const SizedBox(height: 18),
@@ -295,7 +316,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 28),
                           decoration: BoxDecoration(
                             color: AppColors.white,
                             borderRadius: const BorderRadius.only(
@@ -303,7 +325,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               topRight: Radius.circular(32),
                             ),
                             boxShadow: [
-                              BoxShadow(color: AppColors.forest.withOpacity(0.15), blurRadius: 40, offset: const Offset(0, -10)),
+                              BoxShadow(
+                                  color: AppColors.forest.withOpacity(0.15),
+                                  blurRadius: 40,
+                                  offset: const Offset(0, -10)),
                             ],
                           ),
                           child: Column(
@@ -357,26 +382,39 @@ class _LoginScreenState extends State<LoginScreen> {
                                 value: _selectedDistrict,
                                 onChanged: (v) => _selectedDistrict = v,
                                 options: const [
-                                  'Anuradhapura', 'Polonnaruwa', 'Kurunegala', 'Kandy', 'Galle',
-                                  'Hambantota', 'Matale', 'Jaffna', 'Batticaloa'
+                                  'Anuradhapura',
+                                  'Polonnaruwa',
+                                  'Kurunegala',
+                                  'Kandy',
+                                  'Galle',
+                                  'Hambantota',
+                                  'Matale',
+                                  'Jaffna',
+                                  'Batticaloa'
                                 ],
                               ),
                               if (_error.isNotEmpty)
                                 Container(
                                   margin: const EdgeInsets.only(bottom: 12),
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 10),
                                   decoration: BoxDecoration(
                                     color: AppColors.dangerPale,
-                                    border: Border.all(color: AppColors.danger.withOpacity(0.27)),
+                                    border: Border.all(
+                                        color:
+                                            AppColors.danger.withOpacity(0.27)),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Row(
                                     children: [
-                                      const Text('⚠️ ', style: TextStyle(fontSize: 13)),
+                                      const Text('⚠️ ',
+                                          style: TextStyle(fontSize: 13)),
                                       Expanded(
                                         child: Text(
                                           _error,
-                                          style: const TextStyle(color: AppColors.danger, fontSize: 13),
+                                          style: const TextStyle(
+                                              color: AppColors.danger,
+                                              fontSize: 13),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -385,7 +423,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                               ButtonWidget(
-                                text: _isLoading ? 'Creating Account...' : 'Create Account →',
+                                text: _isLoading
+                                    ? 'Creating Account...'
+                                    : 'Create Account →',
                                 onPressed: _isLoading ? () {} : _handleCreate,
                               ),
                               const SizedBox(height: 16),
@@ -394,11 +434,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 children: [
                                   const Text(
                                     'Already have an account?',
-                                    style: TextStyle(color: AppColors.sub, fontSize: 13),
+                                    style: TextStyle(
+                                        color: AppColors.sub, fontSize: 13),
                                   ),
                                   const SizedBox(width: 6),
                                   GestureDetector(
-                                    onTap: () => setState(() => _showCreate = false),
+                                    onTap: () =>
+                                        setState(() => _showCreate = false),
                                     child: const Text(
                                       'Sign In',
                                       style: TextStyle(
@@ -439,7 +481,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.8.133:8002/api/login'),
+        Uri.parse('https://rice-diseases.gt.tc/api/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': _emailController.text,
@@ -460,14 +502,17 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => HomeScreen(supervisor: supervisor)),
+            MaterialPageRoute(
+                builder: (_) => HomeScreen(supervisor: supervisor)),
           );
         }
       } else {
-        setState(() => _error = data['message'] ?? 'Login failed. Please check your credentials.');
+        setState(() => _error =
+            data['message'] ?? 'Login failed. Please check your credentials.');
       }
     } catch (e) {
-      setState(() => _error = 'Connection error. Please check your internet or server IP.');
+      setState(() => _error =
+          'Connection error. Please check your internet or server IP.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -500,7 +545,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.8.133:8002/api/register'),
+        Uri.parse('https://rice-diseases.gt.tc/api/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'username': _usernameController.text,
@@ -528,14 +573,16 @@ class _LoginScreenState extends State<LoginScreen> {
           );
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => HomeScreen(supervisor: supervisor)),
+            MaterialPageRoute(
+                builder: (_) => HomeScreen(supervisor: supervisor)),
           );
         }
       } else {
         setState(() => _error = data['message'] ?? 'Registration failed.');
       }
     } catch (e) {
-      setState(() => _error = 'Connection error. Please check your internet or server IP.');
+      setState(() => _error =
+          'Connection error. Please check your internet or server IP.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

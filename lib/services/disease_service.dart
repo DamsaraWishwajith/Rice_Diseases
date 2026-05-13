@@ -47,18 +47,19 @@ class DiseaseService {
       if (originalImage == null) throw Exception("Failed to decode image");
 
       // 2. Resize to 224x224 (standard for this model)
-      img.Image resizedImage = img.copyResize(originalImage, width: 224, height: 224);
+      img.Image resizedImage =
+          img.copyResize(originalImage, width: 224, height: 224);
 
       // 3. Convert to Float32List and Normalize (0-1)
       // Input shape: [1, 224, 224, 3]
       var input = Float32List(1 * 224 * 224 * 3);
-      
+
       int index = 0;
       for (int y = 0; y < 224; y++) {
         for (int x = 0; x < 224; x++) {
           final pixel = resizedImage.getPixel(x, y);
-          // NEW: Using raw pixel values (0-255) as most Keras MobileNetV3 models 
-          // have an internal Rescaling layer. If normalization is needed, 
+          // NEW: Using raw pixel values (0-255) as most Keras MobileNetV3 models
+          // have an internal Rescaling layer. If normalization is needed,
           // it would happen inside the model.
           input[index++] = pixel.r.toDouble();
           input[index++] = pixel.g.toDouble();
@@ -80,7 +81,7 @@ class DiseaseService {
       List<double> probabilities = output[0];
       int maxIdx = 0;
       double maxProb = probabilities[0];
-      
+
       for (int i = 1; i < probabilities.length; i++) {
         if (probabilities[i] > maxProb) {
           maxProb = probabilities[i];
@@ -113,7 +114,7 @@ class DiseaseService {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.8.133:8002/api/disease-info'),
+        Uri.parse('https://rice-diseases.gt.tc/api/disease-info'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'name': searchLabel}),
       );
@@ -140,7 +141,7 @@ class DiseaseService {
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.8.133:8002/api/disease-reports'),
+        Uri.parse('https://rice-diseases.gt.tc/api/disease-reports'),
       );
 
       request.fields['user_id'] = userId.toString();
@@ -176,11 +177,13 @@ class DiseaseService {
 
   Future<List<DiseaseReport>> getSupervisorReports(int supervisorId) async {
     try {
-      final response = await http.post(
-        Uri.parse('http://192.168.8.133:8002/api/get-supervisor-reports'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'supervisor_id': supervisorId.toString()}),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse('https://rice-diseases.gt.tc/api/get-supervisor-reports'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'supervisor_id': supervisorId.toString()}),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -197,9 +200,10 @@ class DiseaseService {
     }
   }
 
-  Future<void> generatePdfReport(List<DiseaseReport> reports, String district, String supervisorName) async {
+  Future<void> generatePdfReport(List<DiseaseReport> reports, String district,
+      String supervisorName) async {
     final pdf = pw.Document();
-    
+
     // Load Unicode supports fonts to avoid Helvetica warnings
     final font = await PdfGoogleFonts.robotoRegular();
     final boldFont = await PdfGoogleFonts.robotoBold();
@@ -233,7 +237,9 @@ class DiseaseService {
               child: pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('Rice Guard - Disease Reports', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('Rice Guard - Disease Reports',
+                      style: pw.TextStyle(
+                          fontSize: 24, fontWeight: pw.FontWeight.bold)),
                   pw.Text(DateTime.now().toString().split(' ').first),
                 ],
               ),
@@ -245,12 +251,12 @@ class DiseaseService {
             pw.Table(
               border: pw.TableBorder.all(color: PdfColors.grey400),
               columnWidths: {
-                0: const pw.FixedColumnWidth(35),  // ID
-                1: const pw.FixedColumnWidth(60),  // Photo
-                2: const pw.FixedColumnWidth(70),  // Farmer
-                3: const pw.FixedColumnWidth(70),  // Disease
-                4: const pw.FixedColumnWidth(90),  // Date/Note
-                5: const pw.FlexColumnWidth(),     // Solutions
+                0: const pw.FixedColumnWidth(35), // ID
+                1: const pw.FixedColumnWidth(60), // Photo
+                2: const pw.FixedColumnWidth(70), // Farmer
+                3: const pw.FixedColumnWidth(70), // Disease
+                4: const pw.FixedColumnWidth(90), // Date/Note
+                5: const pw.FlexColumnWidth(), // Solutions
               },
               children: [
                 pw.TableRow(
@@ -271,13 +277,15 @@ class DiseaseService {
                       _buildCell('#${report.reportId}'),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(3),
-                        child: img != null 
-                          ? pw.Container(
-                              height: 40,
-                              width: 40,
-                              child: pw.Image(img, fit: pw.BoxFit.cover),
-                            )
-                          : pw.Center(child: pw.Text('No Image', style: const pw.TextStyle(fontSize: 6))),
+                        child: img != null
+                            ? pw.Container(
+                                height: 40,
+                                width: 40,
+                                child: pw.Image(img, fit: pw.BoxFit.cover),
+                              )
+                            : pw.Center(
+                                child: pw.Text('No Image',
+                                    style: const pw.TextStyle(fontSize: 6))),
                       ),
                       _buildCell(report.farmerName),
                       _buildCell(report.diseaseName),
@@ -286,9 +294,13 @@ class DiseaseService {
                         child: pw.Column(
                           crossAxisAlignment: pw.CrossAxisAlignment.start,
                           children: [
-                            pw.Text(report.createdAt.split('T').first, style: const pw.TextStyle(fontSize: 8)),
-                            if (report.customerNote != null && report.customerNote!.isNotEmpty)
-                              pw.Text('\nNote: ${report.customerNote}', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey700)),
+                            pw.Text(report.createdAt.split('T').first,
+                                style: const pw.TextStyle(fontSize: 8)),
+                            if (report.customerNote != null &&
+                                report.customerNote!.isNotEmpty)
+                              pw.Text('\nNote: ${report.customerNote}',
+                                  style: pw.TextStyle(
+                                      fontSize: 7, color: PdfColors.grey700)),
                           ],
                         ),
                       ),
