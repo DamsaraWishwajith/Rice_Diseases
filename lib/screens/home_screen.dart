@@ -76,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final response = await http
           .get(
-            Uri.parse('https://rice-diseases.gt.tc/api/farmers'),
+            Uri.parse('http://192.168.8.184:8000/api/farmers'),
           )
           .timeout(const Duration(seconds: 10));
 

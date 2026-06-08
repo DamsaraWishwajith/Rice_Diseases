@@ -114,7 +114,7 @@ class DiseaseService {
 
     try {
       final response = await http.post(
-        Uri.parse('https://rice-diseases.gt.tc/api/disease-info'),
+        Uri.parse('http://192.168.8.184:8000/api/disease-info'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'name': searchLabel}),
       );
@@ -141,7 +141,7 @@ class DiseaseService {
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://rice-diseases.gt.tc/api/disease-reports'),
+        Uri.parse('http://192.168.8.184:8000/api/disease-reports'),
       );
 
       request.fields['user_id'] = userId.toString();
@@ -179,7 +179,7 @@ class DiseaseService {
     try {
       final response = await http
           .post(
-            Uri.parse('https://rice-diseases.gt.tc/api/get-supervisor-reports'),
+            Uri.parse('http://192.168.8.184:8000/api/get-supervisor-reports'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'supervisor_id': supervisorId.toString()}),
           )
