@@ -628,6 +628,9 @@ class _ScanScreenState extends State<ScanScreen> {
       diseaseName: _disease!,
       imageFile: _imageFile!,
       note: _notes,
+      temp: _sensorData?.temp,
+      hum: _sensorData?.hum,
+      soil: _sensorData?.soil,
     );
 
     if (mounted) {

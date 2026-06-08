@@ -508,6 +508,9 @@ class _MoreScreenState extends State<MoreScreen> {
                               DataColumn(label: Text('Photo', style: TextStyle(fontWeight: FontWeight.w700))),
                               DataColumn(label: Text('Farmer', style: TextStyle(fontWeight: FontWeight.w700))),
                               DataColumn(label: Text('Disease', style: TextStyle(fontWeight: FontWeight.w700))),
+                              DataColumn(label: Text('Temp', style: TextStyle(fontWeight: FontWeight.w700))),
+                              DataColumn(label: Text('Humidity', style: TextStyle(fontWeight: FontWeight.w700))),
+                              DataColumn(label: Text('Soil Moisture', style: TextStyle(fontWeight: FontWeight.w700))),
                               DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.w700))),
                               DataColumn(label: Text('Note', style: TextStyle(fontWeight: FontWeight.w700))),
                               DataColumn(label: Text('Solutions', style: TextStyle(fontWeight: FontWeight.w700))),
@@ -546,6 +549,9 @@ class _MoreScreenState extends State<MoreScreen> {
                                   ),
                                 ),
                                 DataCell(Text(report.diseaseName)),
+                                DataCell(Text(report.temp != null ? '${report.temp!.toStringAsFixed(1)}°C' : '-')),
+                                DataCell(Text(report.hum != null ? '${report.hum!.toStringAsFixed(1)}%' : '-')),
+                                DataCell(Text(report.soil != null ? '${report.soil}%' : '-')),
                                 DataCell(Text(report.createdAt.split('T').first)),
                                 DataCell(
                                   SizedBox(

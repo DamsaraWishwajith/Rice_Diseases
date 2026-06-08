@@ -137,6 +137,9 @@ class DiseaseService {
     required String diseaseName,
     required File imageFile,
     required String note,
+    double? temp,
+    double? hum,
+    int? soil,
   }) async {
     try {
       var request = http.MultipartRequest(
@@ -150,6 +153,15 @@ class DiseaseService {
       }
       request.fields['disease_name'] = diseaseName;
       request.fields['customer_note'] = note;
+      if (temp != null) {
+        request.fields['temp'] = temp.toString();
+      }
+      if (hum != null) {
+        request.fields['hum'] = hum.toString();
+      }
+      if (soil != null) {
+        request.fields['soil'] = soil.toString();
+      }
 
       request.files.add(
         await http.MultipartFile.fromPath(
@@ -296,6 +308,13 @@ class DiseaseService {
                           children: [
                             pw.Text(report.createdAt.split('T').first,
                                 style: const pw.TextStyle(fontSize: 8)),
+                            if (report.temp != null || report.hum != null || report.soil != null)
+                              pw.Text(
+                                  '\nTemp: ${report.temp?.toStringAsFixed(1) ?? '-'}°C'
+                                  '\nHum: ${report.hum?.toStringAsFixed(1) ?? '-'}%'
+                                  '\nSoil: ${report.soil ?? '-'}%',
+                                  style: pw.TextStyle(
+                                      fontSize: 7, color: PdfColors.blueGrey700, fontWeight: pw.FontWeight.bold)),
                             if (report.customerNote != null &&
                                 report.customerNote!.isNotEmpty)
                               pw.Text('\nNote: ${report.customerNote}',
